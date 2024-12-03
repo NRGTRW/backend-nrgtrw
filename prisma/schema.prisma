@@ -3,7 +3,7 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql" // Use your database provider (e.g., MySQL)
+  provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 
@@ -12,23 +12,23 @@ model Category {
   name        String    @unique
   slug        String    @unique
   description String?
-  media       Media[]
+  media       Media[]   @relation("CategoryMedia") // Relation to Media
   products    Product[]
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
 }
 
 model Product {
-  id          Int       @id @default(autoincrement())
+  id          Int      @id @default(autoincrement())
   name        String
   description String?
   price       Float
-  stock       Int       @default(0)
-  media       Media[]
+  stock       Int      @default(0)
+  media       Media[]  @relation("ProductMedia") // Relation to Media
   categoryId  Int
-  category    Category  @relation(fields: [categoryId], references: [id])
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
+  category    Category @relation(fields: [categoryId], references: [id])
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 }
 
 model Media {
@@ -36,40 +36,10 @@ model Media {
   url        String
   type       String
   hoverUrl   String?
+  product    Product?  @relation("ProductMedia", fields: [productId], references: [id]) // Correct relation to Product
   productId  Int?
+  category   Category? @relation("CategoryMedia", fields: [categoryId], references: [id]) // Correct relation to Category
   categoryId Int?
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
-}
-
-model User {
-  id          Int      @id @default(autoincrement())
-  email       String   @unique
-  name        String
-  orders      Order[]
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-}
-
-model Order {
-  id          Int       @id @default(autoincrement())
-  userId      Int
-  user        User      @relation(fields: [userId], references: [id])
-  products    OrderItem[]
-  totalAmount Float
-  status      String
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-}
-
-model OrderItem {
-  id        Int      @id @default(autoincrement())
-  orderId   Int
-  order     Order    @relation(fields: [orderId], references: [id])
-  productId Int
-  product   Product  @relation(fields: [productId], references: [id])
-  quantity  Int      @default(1)
-  price     Float
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
 }

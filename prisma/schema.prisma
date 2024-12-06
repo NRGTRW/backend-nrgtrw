@@ -12,23 +12,23 @@ model Category {
   name        String    @unique
   slug        String    @unique
   description String?
-  media       Media[]   @relation("CategoryMedia") // Relation to Media
+  media       Media[]
   products    Product[]
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
 }
 
 model Product {
-  id          Int      @id @default(autoincrement())
+  id          Int       @id @default(autoincrement())
   name        String
   description String?
   price       Float
-  stock       Int      @default(0)
-  media       Media[]  @relation("ProductMedia") // Relation to Media
+  stock       Int       @default(0)
+  media       Media[]
   categoryId  Int
-  category    Category @relation(fields: [categoryId], references: [id])
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  category    Category  @relation(fields: [categoryId], references: [id])
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
 }
 
 model Media {
@@ -36,10 +36,10 @@ model Media {
   url        String
   type       String
   hoverUrl   String?
-  product    Product?  @relation("ProductMedia", fields: [productId], references: [id]) // Correct relation to Product
   productId  Int?
-  category   Category? @relation("CategoryMedia", fields: [categoryId], references: [id]) // Correct relation to Category
+  product    Product?  @relation(fields: [productId], references: [id])
   categoryId Int?
+  category   Category? @relation(fields: [categoryId], references: [id])
   createdAt  DateTime  @default(now())
   updatedAt  DateTime  @updatedAt
 }

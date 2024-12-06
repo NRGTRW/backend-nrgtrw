@@ -1,8 +1,6 @@
-export function errorHandler(err, req, res, _next) {
-  const { statusCode = 500, name = "Error", message = "Unknown Error" } = err;
-
+export const errorHandler = (err, req, res, next) => {
+  const statusCode = err.status || 500;
   res.status(statusCode).json({
-    isSuccessful: false,
-    errors: [{ name, message }],
+    error: err.message || "Internal Server Error",
   });
-}
+};

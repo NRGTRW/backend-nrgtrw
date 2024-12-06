@@ -1,18 +1,26 @@
-const express = require("express");
-const categoryRoutes = require("./routes/categoryRoutes");
-const productRoutes = require("./routes/productRoutes");
-const { errorHandler } = require("./middlewares/errorHandler");
+import express from "express";
+import categoryRoutes from "./routes/categoryRoutes.js";
+import productRoutes from "./routes/productRoutes.js";
+import { errorHandler } from "./middlewares/errorHandler.js";
+import multer from "multer";
 
 const app = express();
+const upload = multer({ dest: "uploads/" }); // For file uploads
 
 // Middleware
 app.use(express.json());
+app.use("/uploads", express.static("uploads"));
 
 // Routes
 app.use("/api/categories", categoryRoutes);
 app.use("/api/products", productRoutes);
 
-// Global Error Handler
+// Upload route example
+app.post("/api/upload", upload.single("file"), (req, res) => {
+  res.json({ filePath: req.file.path });
+});
+
+// Error Handling Middleware
 app.use(errorHandler);
 
-module.exports = app;
+export default app;

@@ -1,21 +1,25 @@
 import express from "express";
+import multer from "multer";
+import authRoutes from "./routes/authRoutes.js";
 import categoryRoutes from "./routes/categoryRoutes.js";
 import productRoutes from "./routes/productRoutes.js";
+import profileRoutes from "./routes/profileRoutes.js";
 import { errorHandler } from "./middlewares/errorHandler.js";
-import multer from "multer";
 
 const app = express();
-const upload = multer({ dest: "uploads/" }); // For file uploads
 
 // Middleware
-app.use(express.json());
-app.use("/uploads", express.static("uploads"));
+app.use(express.json()); // Parse JSON requests
+app.use("/uploads", express.static("uploads")); // Serve uploaded files
 
 // Routes
-app.use("/api/categories", categoryRoutes);
-app.use("/api/products", productRoutes);
+app.use("/api/auth", authRoutes); // Authentication routes
+app.use("/api/categories", categoryRoutes); // Category routes
+app.use("/api/products", productRoutes); // Product routes
+app.use("/api/profile", profileRoutes); // Profile routes
 
-// Upload route example
+// File Upload Example
+const upload = multer({ dest: "uploads/" });
 app.post("/api/upload", upload.single("file"), (req, res) => {
   res.json({ filePath: req.file.path });
 });

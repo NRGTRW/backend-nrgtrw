@@ -1,12 +1,14 @@
-import express from "express";
-import { getProfile, updateProfile } from "../controllers/profileController.js";
-import { authenticateToken } from "../middlewares/authMiddleware.js";
+const express = require("express");
+const { updateProfile, getProfile } = require("../controllers/profileController");
+const authMiddleware = require("../middlewares/authMiddleware");
 
 const router = express.Router();
 
-router.get("/", authenticateToken, getProfile);
+// Apply authentication middleware to all profile routes
+router.use(authMiddleware);
 
-// Update the user's profile
-router.put("/", authenticateToken, updateProfile);
+// Profile Routes
+router.get("/", getProfile); // Get user profile
+router.put("/", updateProfile); // Update user profile
 
-export default router;
+module.exports = router;

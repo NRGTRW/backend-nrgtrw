@@ -1,27 +1,37 @@
-import prisma from "../utils/prisma.js";
+const prisma = require("../utils/prisma");
 
-export const getProfile = async (req, res, next) => {
+const updateProfile = async (req, res, next) => {
+  const { userId } = req.user;
+  const { address, phone } = req.body;
+
   try {
-    const user = await prisma.user.findUnique({ where: { id: req.user.userId } });
-    if (!user) return res.status(404).json({ error: "User not found" });
-
-    res.json({ id: user.id, name: user.name, email: user.email });
+    const profile = await prisma.profile.upsert({
+      where: { userId },
+      update: { address, phone },
+      create: { userId, address, phone },
+    });
+    res.json({ message: "Profile updated successfully", profile });
   } catch (error) {
     next(error);
   }
 };
 
-export const updateProfile = async (req, res, next) => {
-  try {
-    const { name, email } = req.body;
+const getProfile = async (req, res, next) => {
+  const { userId } = req.user;
 
-    const updatedUser = await prisma.user.update({
-      where: { id: req.user.userId },
-      data: { name, email },
+  try {
+    const profile = await prisma.profile.findUnique({
+      where: { userId },
     });
 
-    res.json({ message: "Profile updated successfully", user: updatedUser });
+    if (!profile) {
+      return res.status(404).json({ message: "Profile not found" });
+    }
+
+    res.json({ profile });
   } catch (error) {
     next(error);
   }
 };
+
+module.exports = { updateProfile, getProfile };

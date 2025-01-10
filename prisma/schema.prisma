@@ -3,85 +3,36 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
+  provider = "mysql"
   url      = env("DATABASE_URL")
 }
 
-model Category {
-  id          Int       @id @default(autoincrement())
-  name        String
-  slug        String    @unique
-  description String?
-  media       Media[]
-  products    Product[]
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
+model User {
+  id            Int      @id @default(autoincrement())
+  email         String   @unique
+  password      String
+  name          String
+  profilePicture String?
+  address       String?
+  phone         String?
+  createdAt     DateTime @default(now())
+  cart          Cart[]
 }
-
 
 model Product {
-  id          Int      @id @default(autoincrement())
-  name        String
-  description String?
-  price       Float
-  stock       Int      @default(0)
-  categoryId  Int
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  media       Media[]
-  category    Category @relation(fields: [categoryId], references: [id])
-}
-
-model Media {
-  id         Int       @id @default(autoincrement())
-  url        String
-  type       String
-  hoverUrl   String?
-  productId  Int?
-  categoryId Int?
-  createdAt  DateTime  @default(now())
-  updatedAt  DateTime  @updatedAt
-  category   Category? @relation(fields: [categoryId], references: [id])
-  product    Product?  @relation(fields: [productId], references: [id])
-}
-
-model User {
-  id        Int     @id @default(autoincrement())
+  id        Int      @id @default(autoincrement())
   name      String
-  email     String  @unique
-  password  String
-  profile   Profile?
+  price     Float
+  imageUrl  String
   createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  cartItems Cart[]
 }
 
-model Profile {
+model Cart {
   id        Int      @id @default(autoincrement())
   userId    Int
-  user      User     @relation(fields: [userId], references: [id])
-  address   String
-  phone     String
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-}
-
-model Order {
-  id         Int       @id @default(autoincrement())
-  userId     Int
-  user       User      @relation(fields: [userId], references: [id])
-  items      OrderItem[]
-  totalPrice Float
-  status     String    @default("Pending")
-  createdAt  DateTime  @default(now())
-  updatedAt  DateTime  @updatedAt
-}
-
-model OrderItem {
-  id        Int     @id @default(autoincrement())
-  orderId   Int
-  order     Order   @relation(fields: [orderId], references: [id])
   productId Int
-  product   Product @relation(fields: [productId], references: [id])
   quantity  Int
-  price     Float
+  user      User     @relation(fields: [userId], references: [id])
+  product   Product  @relation(fields: [productId], references: [id])
 }

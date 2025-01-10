@@ -1,38 +1,23 @@
-/* eslint-disable no-unused-vars */
-import express from "express";
-import multer from "multer";
-import authRoutes from "./routes/authRoutes.js";
-import categoryRoutes from "./routes/categoryRoutes.js";
-import productRoutes from "./routes/productRoutes.js";
-import profileRoutes from "./routes/profileRoutes.js";
-import orderRoutes from "./routes/orderRoutes.js"; // Fixed import
-import { errorHandler } from "./middlewares/errorHandler.js";
+const express = require("express");
+const cors = require("cors");
+const profileRoutes = require("./routes/profile");
+// eslint-disable-next-line no-unused-vars
+const prisma = require("./prisma/client");
+require("dotenv").config();
 
 const app = express();
+const PORT = process.env.PORT || 5000;
 
 // Middleware
-app.use(express.json()); // Parse JSON requests
-app.use("/uploads", express.static("uploads")); // Serve uploaded files
+app.use(cors());
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+app.use("/uploads", express.static("uploads"));
 
 // Routes
-app.use("/api/auth", authRoutes); // Authentication routes
-app.use("/api/categories", categoryRoutes); // Category routes
-app.use("/api/products", productRoutes); // Product routes
-app.use("/api/profile", profileRoutes); // Profile routes
-app.use("/api/orders", orderRoutes); // Order routes
+app.use("/api/profile", profileRoutes);
 
-// File Upload Example
-const upload = multer({ dest: "uploads/" });
-app.post("/api/upload", upload.single("file"), (req, res) => {
-  res.status(200).json({ filePath: req.file.path });
+// Start Server
+app.listen(PORT, () => {
+  console.log(`Server is running on http://localhost:${PORT}`);
 });
-
-// 404 Route Handling
-app.use((req, res, next) => {
-  res.status(404).json({ message: "Route not found" });
-});
-
-// Error Handling Middleware
-app.use(errorHandler);
-
-export default app;

@@ -3,7 +3,7 @@ import prisma from "../utils/prisma.js";
 export const getProducts = async (req, res, next) => {
   try {
     const products = await prisma.product.findMany({
-      include: { category: true }, // Include category data in the response
+      include: { category: true } // Include category data in the response
     });
     res.json(products);
   } catch (error) {
@@ -15,7 +15,7 @@ export const createProduct = async (req, res, next) => {
   try {
     const { name, description, price, stock, categoryId } = req.body;
     const product = await prisma.product.create({
-      data: { name, description, price, stock, categoryId },
+      data: { name, description, price, stock, categoryId }
     });
     res.status(201).json(product);
   } catch (error) {
@@ -28,7 +28,7 @@ export const getProductById = async (req, res, next) => {
     const { id } = req.params;
     const product = await prisma.product.findUnique({
       where: { id: parseInt(id) },
-      include: { category: true },
+      include: { category: true }
     });
 
     if (!product) {

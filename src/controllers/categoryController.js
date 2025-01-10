@@ -19,11 +19,13 @@ export const createCategory = async (req, res, next) => {
       data: {
         name,
         slug,
-        description,
-      },
+        description
+      }
     });
 
-    res.status(201).json({ message: "Category created successfully", category });
+    res
+      .status(201)
+      .json({ message: "Category created successfully", category });
   } catch (error) {
     next(error);
   }
@@ -36,7 +38,7 @@ export const getCategoryBySlug = async (req, res, next) => {
 
     const category = await prisma.category.findUnique({
       where: { slug },
-      include: { products: true }, // Include related products
+      include: { products: true } // Include related products
     });
 
     if (!category) {

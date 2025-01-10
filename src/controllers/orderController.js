@@ -9,7 +9,8 @@ const createOrder = async (req, res, next) => {
     const profile = await prisma.profile.findUnique({ where: { userId } });
     if (!profile || !profile.address || !profile.phone) {
       return res.status(400).json({
-        message: "Please complete your profile (address and phone) before placing an order.",
+        message:
+          "Please complete your profile (address and phone) before placing an order."
       });
     }
 
@@ -17,7 +18,9 @@ const createOrder = async (req, res, next) => {
     let totalPrice = 0;
     const orderItems = await Promise.all(
       items.map(async (item) => {
-        const product = await prisma.product.findUnique({ where: { id: item.productId } });
+        const product = await prisma.product.findUnique({
+          where: { id: item.productId }
+        });
         if (!product) {
           throw new Error(`Product with ID ${item.productId} not found`);
         }
@@ -26,7 +29,7 @@ const createOrder = async (req, res, next) => {
         return {
           productId: item.productId,
           quantity: item.quantity,
-          price: product.price,
+          price: product.price
         };
       })
     );
@@ -37,12 +40,12 @@ const createOrder = async (req, res, next) => {
         userId,
         totalPrice,
         items: {
-          create: orderItems,
-        },
+          create: orderItems
+        }
       },
       include: {
-        items: true,
-      },
+        items: true
+      }
     });
 
     res.status(201).json({ message: "Order created successfully", order });
@@ -60,10 +63,10 @@ const getOrders = async (req, res, next) => {
       include: {
         items: {
           include: {
-            product: true,
-          },
-        },
-      },
+            product: true
+          }
+        }
+      }
     });
 
     res.json(orders);

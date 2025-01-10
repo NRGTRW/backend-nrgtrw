@@ -65,8 +65,8 @@ const signUp = async (req, res, next) => {
       data: {
         name,
         email,
-        password: hashedPassword,
-      },
+        password: hashedPassword
+      }
     });
     res.status(201).json({ message: "User created successfully", user });
   } catch (error) {
@@ -83,7 +83,7 @@ const logIn = async (req, res, next) => {
     }
 
     const token = jwt.sign({ userId: user.id }, process.env.JWT_SECRET, {
-      expiresIn: "1h",
+      expiresIn: "1h"
     });
     res.json({ token, user });
   } catch (error) {

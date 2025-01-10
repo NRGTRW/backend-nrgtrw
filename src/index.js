@@ -221,8 +221,9 @@ app.get("/", (req, res) => {
 // Step 4: Start the Server
 const PORT = process.env.PORT || 8088;
 app.listen(PORT, () => {
-  console.log(`Server is running on http://localhost:${PORT}`);
+  console.log(`Server is running on port ${PORT}`);
 });
+
 
 // Graceful Shutdown
 process.on("SIGINT", async () => {

@@ -25,6 +25,12 @@
     "prisma": "^6.2.1",
     "supertest": "^7.0.0"
   },
+  
+  "engines": {
+  "node": "22.x",
+  "npm": "10.x"
+},
+
   "dependencies": {
     "@prisma/client": "^6.2.1",
     "bcrypt": "^5.1.1",

@@ -24,14 +24,14 @@ const prisma = new PrismaClient();
 const app = express();
 
 // Middleware
-app.use(cors()); // Enable CORS
-app.use(express.json()); // Parse JSON request bodies
-app.use(helmet()); // Add security headers
+app.use(cors());
+app.use(express.json());
+app.use(helmet());
 
 // Rate limiting to prevent abuse
 const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100, // Limit each IP to 100 requests per window
+  windowMs: 15 * 60 * 1000,
+  max: 100,
 });
 app.use(limiter);
 
@@ -53,51 +53,36 @@ const logger = winston.createLogger({
 
 // Step 2: Define API Endpoints
 
-// Authentication Endpoints
-
 // Signup with validation
-// Define the signup schema with zod
 const signupSchema = z.object({
   name: z.string().min(1, "Name is required"),
   email: z.string().email("Invalid email"),
   password: z.string().min(6, "Password must be at least 6 characters long"),
 });
 
-// Signup Endpoint
 app.post("/api/signup", async (req, res, next) => {
-    try {
-      const validatedData = signupSchema.parse(req.body);
-  
-      // Check if the email already exists
-      const existingUser = await prisma.user.findUnique({
-        where: { email: validatedData.email },
-      });
-  
-      if (existingUser) {
-        return res.status(400).json({ error: "Email is already in use." });
-      }
-  
-      const hashedPassword = await bcrypt.hash(validatedData.password, 10);
-      const user = await prisma.user.create({
-        data: {
-          name: validatedData.name,
-          email: validatedData.email,
-          password: hashedPassword,
-        },
-      });
-  
-      const token = jwt.sign({ userId: user.id }, JWT_SECRET);
-      res.json({ token });
-    } catch (error) {
-      if (error instanceof z.ZodError) {
-        res.status(400).json({ errors: error.errors });
-      } else {
-        next(error);
-      }
-    }
-  });
+  try {
+    const validatedData = signupSchema.parse(req.body);
 
-// Login
+    const hashedPassword = await bcrypt.hash(validatedData.password, 10);
+    const user = await prisma.user.create({
+      data: {
+        name: validatedData.name,
+        email: validatedData.email,
+        password: hashedPassword,
+      },
+    });
+
+    const token = jwt.sign({ userId: user.id }, JWT_SECRET);
+    res.json({ token });
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      return res.status(400).json({ errors: error.errors });
+    }
+    next(error);
+  }
+});
+
 app.post("/api/login", async (req, res, next) => {
   const { email, password } = req.body;
 
@@ -115,7 +100,6 @@ app.post("/api/login", async (req, res, next) => {
   }
 });
 
-// Profile Endpoints
 app.get("/api/profile", async (req, res, next) => {
   const token = req.headers.authorization?.split(" ")[1];
 
@@ -176,7 +160,6 @@ app.post(
   }
 );
 
-// Products API
 app.get("/api/products", async (req, res, next) => {
   try {
     const products = await prisma.product.findMany();
@@ -186,7 +169,29 @@ app.get("/api/products", async (req, res, next) => {
   }
 });
 
-// Cart API
+app.post("/api/products", async (req, res, next) => {
+  const { name, price, imageUrl } = req.body;
+  try {
+    const product = await prisma.product.create({
+      data: { name, price, imageUrl },
+    });
+    res.json(product);
+  } catch (error) {
+    next(error);
+  }
+});
+
+app.get("/api/cart", async (req, res, next) => {
+  const token = req.headers.authorization?.split(" ")[1];
+  try {
+    const { userId } = jwt.verify(token, JWT_SECRET);
+    const cart = await prisma.cart.findMany({ where: { userId } });
+    res.json(cart);
+  } catch (error) {
+    next(error);
+  }
+});
+
 app.post("/api/cart", async (req, res, next) => {
   const token = req.headers.authorization?.split(" ")[1];
 
@@ -208,54 +213,26 @@ app.post("/api/cart", async (req, res, next) => {
   }
 });
 
-// Health Check Route
 app.get("/api/health", (req, res) => {
   res.json({ status: "Server is running smoothly!" });
 });
 
-// Root route
 app.get("/", (req, res) => {
   res.send("Welcome to the NRG Backend Server!");
 });
 
-// Step 4: Start the Server
-const PORT = process.env.PORT || 8088;
+const PORT = process.env.PORT || 8090;
 app.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);
 });
 
-
-// Graceful Shutdown
 process.on("SIGINT", async () => {
   console.log("Shutting down gracefully...");
   await prisma.$disconnect();
   process.exit(0);
 });
 
-// Global error handler
 app.use((err, req, res, next) => {
-    logger.error(err.stack);
-    res.status(500).json({ error: "Something went wrong!" });
-  });
-  
-  app.post("/api/products", async (req, res, next) => {
-    const { name, price, imageUrl } = req.body;
-    try {
-      const product = await prisma.product.create({ data: { name, price, imageUrl } });
-      res.json(product);
-    } catch (error) {
-      next(error);
-    }
-  });
-  
-  app.get("/api/cart", async (req, res, next) => {
-    const token = req.headers.authorization?.split(" ")[1];
-    try {
-      const { userId } = jwt.verify(token, JWT_SECRET);
-      const cart = await prisma.cart.findMany({ where: { userId } });
-      res.json(cart);
-    } catch (error) {
-      next(error);
-    }
-  });
-  
+  logger.error(err.stack);
+  res.status(500).json({ error: "Something went wrong!" });
+});

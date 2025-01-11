@@ -1,14 +1,13 @@
-const prisma = require("../prisma/client"); // Import Prisma client
-// eslint-disable-next-line no-unused-vars
-const jwt = require("jsonwebtoken");
+import prisma from "../prisma/client.js"; // Update to ES Module syntax
+import jwt from "jsonwebtoken";
 
 // Fetch Profile
-const getProfile = async (req, res) => {
+export const getProfile = async (req, res) => {
   try {
     const userId = req.user.id;
     const user = await prisma.user.findUnique({
       where: { id: userId },
-      include: { profile: true }
+      include: { profile: true },
     });
 
     if (!user) {
@@ -20,7 +19,7 @@ const getProfile = async (req, res) => {
       email: user.email,
       address: user.profile?.address || "",
       phone: user.profile?.phone || "",
-      profilePicture: user.profile?.profilePicture || "/default-profile.png"
+      profilePicture: user.profile?.profilePicture || "/default-profile.png",
     });
   } catch (error) {
     console.error("Error fetching profile:", error);
@@ -29,7 +28,7 @@ const getProfile = async (req, res) => {
 };
 
 // Update Profile
-const updateProfile = async (req, res) => {
+export const updateProfile = async (req, res) => {
   try {
     const userId = req.user.id;
     const { name, address, phone } = req.body;
@@ -37,7 +36,7 @@ const updateProfile = async (req, res) => {
     const updatedProfile = await prisma.profile.upsert({
       where: { userId },
       update: { name, address, phone },
-      create: { userId, name, address, phone }
+      create: { userId, name, address, phone },
     });
 
     res.status(200).json({ profile: updatedProfile });
@@ -48,7 +47,7 @@ const updateProfile = async (req, res) => {
 };
 
 // Upload Profile Picture
-const uploadProfilePicture = async (req, res) => {
+export const uploadProfilePicture = async (req, res) => {
   try {
     const userId = req.user.id;
     const file = req.file;
@@ -61,7 +60,7 @@ const uploadProfilePicture = async (req, res) => {
     const updatedProfile = await prisma.profile.upsert({
       where: { userId },
       update: { profilePicture: filePath },
-      create: { userId, profilePicture: filePath }
+      create: { userId, profilePicture: filePath },
     });
 
     res.status(200).json({ profile: updatedProfile });
@@ -69,10 +68,4 @@ const uploadProfilePicture = async (req, res) => {
     console.error("Error uploading profile picture:", error);
     res.status(500).json({ error: "Internal server error" });
   }
-};
-
-module.exports = {
-  getProfile,
-  updateProfile,
-  uploadProfilePicture
 };

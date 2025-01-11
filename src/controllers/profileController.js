@@ -1,5 +1,5 @@
 import prisma from "../prisma/client.js"; // Update to ES Module syntax
-import jwt from "jsonwebtoken";
+// import jwt from "jsonwebtoken";
 
 // Fetch Profile
 export const getProfile = async (req, res) => {
@@ -7,7 +7,7 @@ export const getProfile = async (req, res) => {
     const userId = req.user.id;
     const user = await prisma.user.findUnique({
       where: { id: userId },
-      include: { profile: true },
+      include: { profile: true }
     });
 
     if (!user) {
@@ -19,7 +19,7 @@ export const getProfile = async (req, res) => {
       email: user.email,
       address: user.profile?.address || "",
       phone: user.profile?.phone || "",
-      profilePicture: user.profile?.profilePicture || "/default-profile.png",
+      profilePicture: user.profile?.profilePicture || "/default-profile.png"
     });
   } catch (error) {
     console.error("Error fetching profile:", error);
@@ -36,7 +36,7 @@ export const updateProfile = async (req, res) => {
     const updatedProfile = await prisma.profile.upsert({
       where: { userId },
       update: { name, address, phone },
-      create: { userId, name, address, phone },
+      create: { userId, name, address, phone }
     });
 
     res.status(200).json({ profile: updatedProfile });
@@ -60,7 +60,7 @@ export const uploadProfilePicture = async (req, res) => {
     const updatedProfile = await prisma.profile.upsert({
       where: { userId },
       update: { profilePicture: filePath },
-      create: { userId, profilePicture: filePath },
+      create: { userId, profilePicture: filePath }
     });
 
     res.status(200).json({ profile: updatedProfile });

@@ -6,7 +6,7 @@ import prisma from "../prisma/client.js";
 const signupSchema = z.object({
   name: z.string().min(1, "Name is required"),
   email: z.string().email("Invalid email"),
-  password: z.string().min(6, "Password must be at least 6 characters long"),
+  password: z.string().min(6, "Password must be at least 6 characters long")
 });
 
 export const signup = async (req, res, next) => {
@@ -18,8 +18,8 @@ export const signup = async (req, res, next) => {
       data: {
         name: validatedData.name,
         email: validatedData.email,
-        password: hashedPassword,
-      },
+        password: hashedPassword
+      }
     });
 
     const token = jwt.sign({ userId: user.id }, process.env.JWT_SECRET);

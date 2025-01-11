@@ -1,17 +1,19 @@
-import prisma from "../prisma/client.js"; // Update to ES Module syntax
+import prisma from "../prisma/client.js"; // Import Prisma client
 // import jwt from "jsonwebtoken";
+import { NotFoundError, CustomError } from "../utils/errors.js";
 
 // Fetch Profile
-export const getProfile = async (req, res) => {
+export const getProfile = async (req, res, next) => {
   try {
     const userId = req.user.id;
+
     const user = await prisma.user.findUnique({
       where: { id: userId },
       include: { profile: true }
     });
 
     if (!user) {
-      return res.status(404).json({ error: "User not found" });
+      throw new NotFoundError("user");
     }
 
     res.status(200).json({
@@ -22,13 +24,12 @@ export const getProfile = async (req, res) => {
       profilePicture: user.profile?.profilePicture || "/default-profile.png"
     });
   } catch (error) {
-    console.error("Error fetching profile:", error);
-    res.status(500).json({ error: "Internal server error" });
+    next(error);
   }
 };
 
 // Update Profile
-export const updateProfile = async (req, res) => {
+export const updateProfile = async (req, res, next) => {
   try {
     const userId = req.user.id;
     const { name, address, phone } = req.body;
@@ -41,19 +42,18 @@ export const updateProfile = async (req, res) => {
 
     res.status(200).json({ profile: updatedProfile });
   } catch (error) {
-    console.error("Error saving profile:", error);
-    res.status(500).json({ error: "Internal server error" });
+    next(error);
   }
 };
 
 // Upload Profile Picture
-export const uploadProfilePicture = async (req, res) => {
+export const uploadProfilePicture = async (req, res, next) => {
   try {
     const userId = req.user.id;
     const file = req.file;
 
     if (!file) {
-      return res.status(400).json({ error: "No file uploaded" });
+      throw new CustomError("Bad Request", "No file uploaded", 400);
     }
 
     const filePath = `/uploads/${file.filename}`;
@@ -65,7 +65,6 @@ export const uploadProfilePicture = async (req, res) => {
 
     res.status(200).json({ profile: updatedProfile });
   } catch (error) {
-    console.error("Error uploading profile picture:", error);
-    res.status(500).json({ error: "Internal server error" });
+    next(error);
   }
 };

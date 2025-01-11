@@ -21,29 +21,38 @@ app.use(express.json());
 app.use(
   rateLimit({
     windowMs: 15 * 60 * 1000, // 15 minutes
-    max: 100 // Limit each IP to 100 requests per window
+    max: 100, // Limit each IP to 100 requests per window
+    message: "Too many requests from this IP, please try again later."
   })
 );
 
-// Routes
-// Register routes
+// Default root route
+app.get("/", (req, res) => {
+  res.send("Welcome to the NRG Backend Server! The API is running.");
+});
+
+// Health check route
+app.get("/api/health", (req, res) =>
+  res.status(200).json({ status: "Server is running smoothly!" })
+);
+
+// API Routes
 app.use("/api/auth", authRoutes);
 app.use("/api/profile", profileRoutes);
 app.use("/api/products", productRoutes);
 app.use("/api/cart", cartRoutes);
 
-// Default root route
-app.get("/", (req, res) => {
-  res.send("Welcome to the NRG Backend Server!");
+// Catch-all route for undefined paths
+app.use((req, res, next) => {
+  res.status(404).json({
+    error: "The requested resource could not be found on this server."
+  });
 });
-
-app.get("/api/health", (req, res) =>
-  res.json({ status: "Server is running smoothly!" })
-);
 
 // Global error handler
 app.use(errorMiddleware);
 
+// Start the server
 const PORT = process.env.PORT || 8080;
 app.listen(PORT, () => {
   logger.info(`Server is running on port ${PORT}`);

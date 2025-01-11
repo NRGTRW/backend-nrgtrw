@@ -4,17 +4,18 @@ import {
   updateProfile,
   uploadProfilePicture
 } from "../controllers/profileController.js";
-import authMiddleware from "../middlewares/authMiddleware.js";
+import authenticateToken from "../middlewares/authMiddleware.js";
 import multer from "multer";
 
 const upload = multer({ dest: "uploads/" });
+
 const router = express.Router();
 
-router.get("/", authMiddleware, getProfile);
-router.put("/", authMiddleware, updateProfile);
+router.get("/", authenticateToken, getProfile);
+router.put("/", authenticateToken, updateProfile);
 router.post(
   "/upload",
-  authMiddleware,
+  authenticateToken,
   upload.single("profilePicture"),
   uploadProfilePicture
 );

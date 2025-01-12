@@ -15,21 +15,34 @@ dotenv.config();
 
 const app = express();
 
-// Middleware
-app.use(cors());
+// CORS Configuration
+const allowedOrigins = [
+  "http://localhost:5173", // Local development
+  "https://www.nrgtrw.com", // Production domain
+];
+
 app.use(
   cors({
-    origin: "http://localhost:5173", // Replace with your frontend's URL
-    methods: "GET, POST, PUT, DELETE",
+    origin: (origin, callback) => {
+      if (!origin || allowedOrigins.includes(origin)) {
+        callback(null, true);
+      } else {
+        callback(new Error("Not allowed by CORS"));
+      }
+    },
+    methods: ["GET", "POST", "PUT", "DELETE"],
+    credentials: true, // Include cookies if needed
   })
 );
+
+// Middleware
 app.use(helmet());
 app.use(express.json());
 app.use(
   rateLimit({
     windowMs: 15 * 60 * 1000, // 15 minutes
     max: 100, // Limit each IP to 100 requests per window
-    message: "Too many requests from this IP, please try again later."
+    message: "Too many requests from this IP, please try again later.",
   })
 );
 
@@ -53,7 +66,7 @@ app.use("/api", itemRoutes);
 // Catch-all route for undefined paths
 app.use((req, res, next) => {
   res.status(404).json({
-    error: "The requested resource could not be found on this server."
+    error: "The requested resource could not be found on this server.",
   });
 });
 

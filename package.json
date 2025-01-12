@@ -10,7 +10,7 @@
     "format": "prettier --write .",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
-    "postinstall": "npx prisma migrate deploy && npx prisma db seed"
+    "build": "npx prisma migrate deploy"
   },
   "prisma": {
     "seed": "node ./prisma/seed.js"

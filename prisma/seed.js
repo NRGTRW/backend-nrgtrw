@@ -3,6 +3,8 @@ import { PrismaClient } from "@prisma/client";
 const BASE_URL = process.env.IMAGE_BASE_URL;
 const prisma = new PrismaClient();
 
+
+
 export const eleganceProducts = [
   {
     id: 1,
@@ -36,101 +38,72 @@ export const eleganceProducts = [
       },
     ],
   },
-];
-
-export const pumpCoverProducts = [
-  {
-    id: 1,
-    name: "Samurai Pants",
-    price: 199.0,
-    description:
-      "Sleek Samurai-inspired pants designed for movement and style.",
-    category: "Confidence",
-    imageUrl: `${BASE_URL}/images/BlackSamurai.webp`,
-    sizes: ["S", "M", "L", "XL"],
-    colors: [
-      {
-        colorName: "Black",
-        image: `${BASE_URL}/images/BlackSamurai.webp`,
-        hoverImage: `${BASE_URL}/HoverImages/BlackSamuraiHover.webp`,
-      },
-      {
-        colorName: "Grey",
-        image: `${BASE_URL}/DifferentColors/GreySamurai.webp`,
-        hoverImage: `${BASE_URL}/HoverImages/GreySamuraiHover.webp`,
-      },
-      {
-        colorName: "White",
-        image: `${BASE_URL}/DifferentColors/WhiteSamurai.webp`,
-        hoverImage: `${BASE_URL}/HoverImages/WhiteSamuraiHover.webp`,
-      },
-      {
-        colorName: "Brown",
-        image: `${BASE_URL}/DifferentColors/BrownSamurai.webp`,
-        hoverImage: `${BASE_URL}/HoverImages/BrownSamuraiHover.webp`,
-      },
-    ],
-  },
   {
     id: 2,
-    name: "Hoodie",
+    name: "Turtleneck",
     price: 79.0,
-    description: "Warm, oversized hoodie ideal for cozy days or workouts.",
-    category: "Confidence",
-    imageUrl: `${BASE_URL}/images/BlackHoodie.webp`,
+    description:
+      "Classic turtleneck designed for comfort and warmth, featuring versatile color options.",
+    category: "Elegance",
+    imageUrl: `${BASE_URL}/images/WhiteMTN.webp`,
     sizes: ["S", "M", "L", "XL"],
     colors: [
       {
-        colorName: "Black",
-        image: `${BASE_URL}/images/BlackHoodie.webp`,
-        hoverImage: `${BASE_URL}/HoverImages/BlackHoodieHover.webp`,
-      },
-      {
-        colorName: "Grey",
-        image: `${BASE_URL}/DifferentColors/GreyHoodie.webp`,
-        hoverImage: `${BASE_URL}/HoverImages/GreyHoodieHover.webp`,
-      },
-      {
         colorName: "White",
-        image: `${BASE_URL}/DifferentColors/WhiteHoodie.webp`,
-        hoverImage: `${BASE_URL}/HoverImages/WhiteHoodieHover.webp`,
+        image: `${BASE_URL}/images/WhiteMTN.webp`,
+        hoverImage: `${BASE_URL}/HoverImages/WhiteMTNHover.webp`,
       },
       {
-        colorName: "Brown",
-        image: `${BASE_URL}/DifferentColors/BrownHoodie.webp`,
-        hoverImage: `${BASE_URL}/HoverImages/BrownHoodieHover.webp`,
+        colorName: "Black",
+        image: `${BASE_URL}/DifferentColors/BlackMTN.webp`,
+        hoverImage: `${BASE_URL}/HoverImages/BlackMTNHover.webp`,
+      },
+      {
+        colorName: "Beige",
+        image: `${BASE_URL}/DifferentColors/BeigeMTN.jpg`,
+        hoverImage: `${BASE_URL}/HoverImages/BeigeMTNHover.webp`,
+      },
+      {
+        colorName: "Burgundy",
+        image: `${BASE_URL}/DifferentColors/BurgundyMTN.webp`,
+        hoverImage: `${BASE_URL}/HoverImages/BurgundyMTNHover.webp`,
       },
     ],
   },
   {
     id: 3,
-    name: "Shorts",
+    name: "Shirt",
     price: 99.0,
     description:
-      "Comfortable shorts with a premium design, perfect for sports or leisure.",
-    category: "Confidence",
-    imageUrl: `${BASE_URL}/images/BlackShorts.webp`,
+      "A premium shirt with tailored cuts, made from the finest fabrics for a perfect fit.",
+    category: "Elegance",
+    imageUrl: `${BASE_URL}/images/WhiteShirt.webp`,
     sizes: ["S", "M", "L", "XL"],
     colors: [
       {
-        colorName: "Black",
-        image: `${BASE_URL}/images/BlackShorts.webp`,
-        hoverImage: `${BASE_URL}/HoverImages/BlackShortsHover.webp`,
+        colorName: "White",
+        image: `${BASE_URL}/images/WhiteShirt.webp`,
+        hoverImage: `${BASE_URL}/HoverImages/WhiteShirtHover.jpg`,
       },
       {
         colorName: "Grey",
-        image: `${BASE_URL}/DifferentColors/GreyShorts.webp`,
-        hoverImage: `${BASE_URL}/HoverImages/GreyShortsHover.webp`,
+        image: `${BASE_URL}/DifferentColors/GreyShirt.webp`,
+        hoverImage: `${BASE_URL}/HoverImages/GreyShirtHover.jpg`,
       },
       {
-        colorName: "White",
-        image: `${BASE_URL}/DifferentColors/WhiteShorts.webp`,
-        hoverImage: `${BASE_URL}/HoverImages/WhiteShortsHover.webp`,
+        colorName: "Green",
+        image: `${BASE_URL}/DifferentColors/GreenShirt.webp`,
+        hoverImage: `${BASE_URL}/HoverImages/GreenShirtHover.jpg`,
       },
       {
-        colorName: "Brown",
-        image: `${BASE_URL}/DifferentColors/BrownShorts.webp`,
-        hoverImage: `${BASE_URL}/HoverImages/BrownShortsHover.webp`,
+        colorName: "Burgundy",
+        image: `${BASE_URL}/DifferentColors/BurgundyShirt.jpg`,
+        hoverImage: `${BASE_URL}/HoverImages/BurgundyShirtHover.jpg`,
+      },
+      {
+        colorName: "Navy",
+        image: `${BASE_URL}/DifferentColors/NavyShirt.webp`,
+        hoverImage: `${BASE_URL}/HoverImages/NavyShirtHover.jpg`,
       },
     ],
   },
@@ -141,48 +114,39 @@ export const pumpCoverProducts = [
     description:
       "A stylish and elegant bamboo t-shirt with a unique design. Made from soft, durable bamboo.",
     category: "Elegance",
+    imageUrl: `${BASE_URL}/images/WhiteBambooT.webp`,
     sizes: ["S", "M", "L", "XL"],
     colors: [
       {
         colorName: "White",
-        image:
-          `${BASE_URL}/images/WhiteBambooT.webp`,
-        hoverImage:
-          `${BASE_URL}/HoverImages/WhiteBambooTHover.jpg`
+        image: `${BASE_URL}/images/WhiteBambooT.webp`,
+        hoverImage: `${BASE_URL}/HoverImages/WhiteBambooTHover.jpg`,
       },
       {
         colorName: "Black",
-        image:
-          `${BASE_URL}/DifferentColors/BlackBambooT.webp`,
-        hoverImage:
-          `${BASE_URL}/HoverImages/BlackBambooTHover.webp`
+        image: `${BASE_URL}/DifferentColors/BlackBambooT.webp`,
+        hoverImage: `${BASE_URL}/HoverImages/BlackBambooTHover.webp`,
       },
       {
         colorName: "Grey",
-        image:
-          `${BASE_URL}/DifferentColors/GreyBambooT.webp`,
-        hoverImage:
-          `${BASE_URL}/HoverImages/GreyBambooTHover.webp`
+        image: `${BASE_URL}/DifferentColors/GreyBambooT.webp`,
+        hoverImage: `${BASE_URL}/HoverImages/GreyBambooTHover.webp`,
       },
       {
         colorName: "Green",
-        image:
-          `${BASE_URL}/DifferentColors/GreenBambooT.jpg`,
-        hoverImage:
-          `${BASE_URL}/HoverImages/GreenBambooTHover.webp`
+        image: `${BASE_URL}/DifferentColors/GreenBambooT.jpg`,
+        hoverImage: `${BASE_URL}/HoverImages/GreenBambooTHover.webp`,
       },
       {
         colorName: "Beige",
-        image:
-          `${BASE_URL}/DifferentColors/BeigeBambooT.webp`,
-        hoverImage:
-          `${BASE_URL}/HoverImages/BeigeBambooTHover.webp`
-      }
-    ]
-  }
+        image: `${BASE_URL}/DifferentColors/BeigeBambooT.webp`,
+        hoverImage: `${BASE_URL}/HoverImages/BeigeBambooTHover.webp`,
+      },
+    ],
+  },
 ];
 
-export const pumpCoversProducts = [
+export const pumpCoverProducts = [
   {
     id: 5,
     name: "Samurai Pants",
@@ -388,7 +352,7 @@ export const confidenceProducts = [
         {
           colorName: "Black",
           image: `${BASE_URL}/images/BlackShorts.webp`,
-          hoverImage: `${BASE_URL}/HoverImages/BlackShortsHover.webp`
+          hoverImage: `${BASE_URL}/HoverImages/BlackShortsHover(1).webp`
         },
         {
           colorName: "Grey",
@@ -472,7 +436,7 @@ const main = async () => {
               colorName: color.colorName || "Default Color",
               imageUrl: isValidUrl(color.image)
                 ? color.image
-                : "https://example.com/placeholder.jpg", // Fallback for invalid color image
+                : "https://dummyimage.com/150x150/cccccc/000000&text=Image+Unavailable",// Fallback for invalid color image
               hoverImage: isValidUrl(color.hoverImage)
                 ? color.hoverImage
                 : "https://example.com/placeholder-hover.jpg", // Fallback for invalid hover image

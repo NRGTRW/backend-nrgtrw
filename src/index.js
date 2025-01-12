@@ -9,6 +9,7 @@ import profileRoutes from "./routes/profileRoutes.js";
 import productRoutes from "./routes/productRoutes.js";
 import cartRoutes from "./routes/cartRoutes.js";
 import logger from "./utils/logger.js";
+import itemRoutes from "./routes/itemRoutes.js";
 
 dotenv.config();
 
@@ -16,6 +17,12 @@ const app = express();
 
 // Middleware
 app.use(cors());
+app.use(
+  cors({
+    origin: "http://localhost:5173", // Replace with your frontend's URL
+    methods: "GET, POST, PUT, DELETE",
+  })
+);
 app.use(helmet());
 app.use(express.json());
 app.use(
@@ -41,6 +48,7 @@ app.use("/api/auth", authRoutes);
 app.use("/api/profile", profileRoutes);
 app.use("/api/products", productRoutes);
 app.use("/api/cart", cartRoutes);
+app.use("/api", itemRoutes);
 
 // Catch-all route for undefined paths
 app.use((req, res, next) => {

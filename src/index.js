@@ -18,7 +18,8 @@ const app = express();
 // CORS Configuration
 const allowedOrigins = [
   "http://localhost:5173", // Local development
-  "https://www.nrgtrw.com", // Production domain
+  "https://www.nrgtrw.com",
+  "https://nrgtrw.com",   // Production domain
 ];
 
 app.use(

@@ -1,3 +1,5 @@
+// Main Backend Server Entry Point
+
 import express from "express";
 import dotenv from "dotenv";
 import helmet from "helmet";
@@ -10,15 +12,16 @@ import productRoutes from "./routes/productRoutes.js";
 import cartRoutes from "./routes/cartRoutes.js";
 import logger from "./utils/logger.js";
 import itemRoutes from "./routes/itemRoutes.js";
+import { PrismaClient } from "@prisma/client";
 
 dotenv.config();
-
 const app = express();
+const prisma = new PrismaClient();
 
 // CORS Configuration
 const allowedOrigins = [
   "http://localhost:5173", // Local development
-  "https://www.nrgtrw.com",
+  "https://www.nrgtrw.com",// Production domain
   "https://nrgtrw.com",   // Production domain
 ];
 
@@ -47,6 +50,12 @@ app.use(
   })
 );
 
+// Request Logging (Optional for Debugging)
+app.use((req, res, next) => {
+  console.log(`${req.method} ${req.url}`);
+  next();
+});
+
 // Default root route
 app.get("/", (req, res) => {
   res.send("Welcome to the NRG Backend Server! The API is running.");
@@ -56,6 +65,17 @@ app.get("/", (req, res) => {
 app.get("/api/health", (req, res) =>
   res.status(200).json({ status: "Server is running smoothly!" })
 );
+
+// Database Health Check Route
+app.get("/api/db-health", async (req, res) => {
+  try {
+    await prisma.$queryRaw`SELECT 1`;
+    res.status(200).json({ status: "Database is connected" });
+  } catch (error) {
+    console.error("Database connection error:", error);
+    res.status(500).json({ error: "Database connection failed" });
+  }
+});
 
 // API Routes
 app.use("/api/auth", authRoutes);

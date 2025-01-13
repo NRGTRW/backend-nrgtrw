@@ -405,57 +405,57 @@ export const confidenceProducts = [
     }
   ];
 
-const isValidUrl = (url) => {
-  const urlRegex = /^https?:\/\/[^\s/$.?#].[^\s]*$/;
-  return urlRegex.test(url);
-};
-
-const main = async () => {
-  const allProducts = [
-    ...eleganceProducts,
-    ...pumpCoverProducts,
-  ];
-
-  for (const product of allProducts) {
+  const isValidUrl = (url) => {
+    const urlRegex = /^https?:\/\/[^\s/$.?#].[^\s]*$/;
+    return urlRegex.test(url);
+  };
+  
+  const seedDatabase = async () => {
+    const allProducts = [
+      ...eleganceProducts,
+      ...pumpCoverProducts,
+    ];
+  
     try {
-      console.log(`Processing product: ${product.name}`);
-      await prisma.product.create({
-        data: {
-          name: product.name,
-          price: product.price,
-          description: product.description,
-          category: product.category,
-          imageUrl: isValidUrl(product.imageUrl)
-            ? product.imageUrl
-            : "https://example.com/placeholder.jpg", // Fallback for invalid product image
-          sizes: {
-            create: product.sizes.map((size) => ({ size })),
+      for (const product of allProducts) {
+        console.log(`Processing product: ${product.name}`);
+        await prisma.product.create({
+          data: {
+            name: product.name,
+            price: product.price,
+            description: product.description,
+            category: product.category,
+            imageUrl: isValidUrl(product.imageUrl)
+              ? product.imageUrl
+              : "https://example.com/placeholder.jpg", // Fallback for invalid product image
+            sizes: {
+              create: product.sizes.map((size) => ({ size })),
+            },
+            colors: {
+              create: product.colors.map((color) => ({
+                colorName: color.colorName || "Default Color",
+                imageUrl: isValidUrl(color.image)
+                  ? color.image
+                  : "https://dummyimage.com/150x150/cccccc/000000&text=Image+Unavailable", // Fallback for invalid color image
+                hoverImage: isValidUrl(color.hoverImage)
+                  ? color.hoverImage
+                  : "https://example.com/placeholder-hover.jpg", // Fallback for invalid hover image
+              })),
+            },
           },
-          colors: {
-            create: product.colors.map((color) => ({
-              colorName: color.colorName || "Default Color",
-              imageUrl: isValidUrl(color.image)
-                ? color.image
-                : "https://dummyimage.com/150x150/cccccc/000000&text=Image+Unavailable",// Fallback for invalid color image
-              hoverImage: isValidUrl(color.hoverImage)
-                ? color.hoverImage
-                : "https://example.com/placeholder-hover.jpg", // Fallback for invalid hover image
-            })),
-          },
-        },
-      });
-      console.log(`Inserted product: ${product.name}`);
+        });
+        console.log(`Inserted product: ${product.name}`);
+      }
+      console.log("Database seeded successfully!");
     } catch (error) {
-      console.error(`Failed to insert product: ${product.name}`, error.message);
+      console.error("Error while seeding database:", error.message);
+    } finally {
+      await prisma.$disconnect();
     }
-  }
-};
-
-main()
-  .catch((e) => {
-    console.error("Unexpected error:", e.message);
+  };
+  
+  // Run the seed function
+  seedDatabase().catch((error) => {
+    console.error("Unexpected error:", error.message);
     process.exit(1);
-  })
-  .finally(async () => {
-    await prisma.$disconnect();
   });

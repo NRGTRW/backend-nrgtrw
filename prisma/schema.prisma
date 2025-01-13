@@ -1,15 +1,12 @@
-// datasource block
-datasource db {
-  provider = "mysql"
-  url      = env("DATABASE_URL") // Ensure DATABASE_URL is properly set in .env
-}
-
-// generator block
 generator client {
   provider = "prisma-client-js"
 }
 
-// models
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
 model User {
   id            Int       @id @default(autoincrement())
   email         String    @unique
@@ -26,7 +23,7 @@ model User {
 
 model Product {
   id          Int           @id @default(autoincrement())
-  name        String        @unique
+  name        String
   price       Float
   description String
   imageUrl    String?       @db.Text
@@ -41,8 +38,8 @@ model Product {
 model ProductColor {
   id         Int     @id @default(autoincrement())
   colorName  String
-  imageUrl   String   @db.Text // Allows longer strings
-  hoverImage String   @db.Text // Allows longer strings
+  imageUrl   String   @db.Text
+  hoverImage String   @db.Text
   product    Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
   productId  Int
 }
@@ -50,7 +47,7 @@ model ProductColor {
 model ProductSize {
   id        Int     @id @default(autoincrement())
   size      String
-  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
   productId Int
 }
 

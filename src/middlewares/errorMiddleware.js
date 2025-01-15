@@ -6,13 +6,33 @@ const errorMiddleware = (err, req, res, next) => {
     err.message || "An unexpected error occurred on the server.";
 
   // Log detailed error for debugging
-  logger.error(`Error: ${errorMessage}`);
+  logger.error(`[${req.method} ${req.originalUrl}] Error: ${errorMessage}`);
   logger.error(err.stack);
 
-  // Send response to client
+  // Handle specific error types
+  if (err.name === "ValidationError") {
+    return res.status(400).json({
+      error: "Validation Error",
+      details: err.errors, // Specific validation error details
+    });
+  }
+
+  if (err.name === "UnauthorizedError") {
+    return res.status(401).json({
+      error: "Unauthorized",
+      message: "You are not authorized to access this resource.",
+    });
+  }
+
+  // Send generic error response
   res.status(statusCode).json({
     error: errorMessage,
-    details: process.env.NODE_ENV === "production" ? undefined : err.stack // Only show stack trace in non-production environments
+    statusCode,
+    timestamp: new Date().toISOString(),
+    details:
+      process.env.NODE_ENV === "production"
+        ? undefined
+        : err.stack || err.details, // Stack trace only in non-production
   });
 };
 

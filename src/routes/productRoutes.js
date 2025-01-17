@@ -1,14 +1,12 @@
 import express from "express";
-import {
-  getProducts,
-  getProductById,
-  createProduct,
-} from "../controllers/productController.js";
+import { getProducts, getProductById } from "../controllers/productController.js";
 
 const router = express.Router();
 
-router.get("/", getProducts);
-router.get("/:id", getProductById); // Added route to fetch a product by ID
-router.post("/", createProduct);
+// Route for fetching all products
+router.get("/products", getProducts);
+
+// Route for fetching a single product by ID
+router.get("/products/:id", getProductById);
 
 export default router;

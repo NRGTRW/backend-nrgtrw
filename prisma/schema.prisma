@@ -8,27 +8,27 @@ datasource db {
 }
 
 model User {
-  id            Int       @id @default(autoincrement())
-  email         String    @unique
-  password      String
-  name          String
+  id             Int        @id @default(autoincrement())
+  email          String     @unique
+  password       String
+  name           String
   profilePicture String?
-  address       String?
-  phone         String?
-  isAdmin       Boolean   @default(false)
-  createdAt     DateTime  @default(now())
-  cart          CartItem[]
-  orders        Order[]
+  address        String?
+  phone          String?
+  isAdmin        Boolean    @default(false)
+  createdAt      DateTime   @default(now())
+  cart           CartItem[]
+  orders         Order[]
 }
 
 model Product {
-  id          Int           @id @default(autoincrement())
+  id          Int            @id @default(autoincrement())
   name        String
   price       Float
   description String
-  imageUrl    String?       @db.Text
+  imageUrl    String?        @db.Text
   category    String
-  createdAt   DateTime      @default(now())
+  createdAt   DateTime       @default(now())
   sizes       ProductSize[]
   colors      ProductColor[]
   cartItems   CartItem[]
@@ -38,9 +38,9 @@ model Product {
 model ProductColor {
   id         Int     @id @default(autoincrement())
   colorName  String
-  imageUrl   String   @db.Text
-  hoverImage String   @db.Text
-  product    Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  imageUrl   String  @db.Text
+  hoverImage String  @db.Text
+  product    Product @relation(fields: [productId], references: [id], onDelete: Cascade)
   productId  Int
 }
 
@@ -61,12 +61,12 @@ model CartItem {
 }
 
 model Order {
-  id           Int         @id @default(autoincrement())
-  userId       Int
-  totalAmount  Float
-  createdAt    DateTime    @default(now())
-  user         User        @relation(fields: [userId], references: [id], onDelete: Cascade)
-  orderItems   OrderItem[]
+  id          Int         @id @default(autoincrement())
+  userId      Int
+  totalAmount Float
+  createdAt   DateTime    @default(now())
+  user        User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  orderItems  OrderItem[]
 }
 
 model OrderItem {

@@ -1,5 +1,3 @@
-// Main Backend Server Entry Point
-
 import express from "express";
 import dotenv from "dotenv";
 import helmet from "helmet";
@@ -11,7 +9,6 @@ import profileRoutes from "./routes/profileRoutes.js";
 import productRoutes from "./routes/productRoutes.js";
 import cartRoutes from "./routes/cartRoutes.js";
 import logger from "./utils/logger.js";
-import itemRoutes from "./routes/itemRoutes.js";
 import { PrismaClient } from "@prisma/client";
 
 dotenv.config();
@@ -20,9 +17,9 @@ const prisma = new PrismaClient();
 
 // CORS Configuration
 const allowedOrigins = [
-  "http://localhost:5173", // Local development
-  "https://www.nrgtrw.com", // Production domain
-  "https://nrgtrw.com",    // Production domain
+  "http://localhost:5173", // Frontend development environment
+  "http://localhost:5174", // Another local frontend instance
+  "https://your-production-domain.com", // Production domain
 ];
 
 app.use(
@@ -35,7 +32,7 @@ app.use(
       }
     },
     methods: ["GET", "POST", "PUT", "DELETE"],
-    credentials: true, // Include cookies if needed
+    allowedHeaders: ["Content-Type", "Authorization"],
   })
 );
 
@@ -50,7 +47,7 @@ app.use(
   })
 );
 
-// Request Logging (Optional for Debugging)
+// Logging Middleware (Optional)
 app.use((req, res, next) => {
   console.log(`${req.method} ${req.url}`);
   next();
@@ -80,9 +77,8 @@ app.get("/api/db-health", async (req, res) => {
 // API Routes
 app.use("/api/auth", authRoutes);
 app.use("/api/profile", profileRoutes);
-app.use("/api/products", productRoutes); // Products API
+app.use("/api/products", productRoutes);
 app.use("/api/cart", cartRoutes);
-app.use("/api", itemRoutes);
 
 // Catch-all route for undefined paths
 app.use((req, res, next) => {

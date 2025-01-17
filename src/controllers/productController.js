@@ -19,6 +19,27 @@ export const getProducts = async (req, res) => {
 
 export const getProductById = async (req, res) => {
   const { id } = req.params;
+export const getProductById = async (req, res, next) => {
+  const { id } = req.params;
+  try {
+    const product = await prisma.product.findUnique({
+      where: { id: parseInt(id, 10) },
+    });
+
+    if (!product) {
+      return res.status(404).json({ error: "Product not found" });
+    }
+
+    res.status(200).json(product);
+  } catch (error) {
+    next(error); // Use error middleware for handling
+  }
+};
+
+
+export const createProduct = async (req, res, next) => {
+  try {
+    const { name, price, imageUrl } = req.body;
 
   try {
     const product = await prisma.product.findUnique({

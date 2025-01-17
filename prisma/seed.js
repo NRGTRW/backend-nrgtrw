@@ -3,6 +3,11 @@ import { PrismaClient } from "@prisma/client";
 const BASE_URL = process.env.IMAGE_BASE_URL;
 const prisma = new PrismaClient();
 
+const fallbackImage = "https://example.com/fallback.jpg";
+const isValidUrl = (url) => /^https?:\/\/[^\s/$.?#].[^\s]*$/.test(url);
+
+// In your seed data logic
+image: isValidUrl(product.image) ? product.image : fallbackImage,
 
 
 export const eleganceProducts = [
@@ -405,16 +410,9 @@ export const confidenceProducts = [
     }
   ];
 
-  const isValidUrl = (url) => {
-    const urlRegex = /^https?:\/\/[^\s/$.?#].[^\s]*$/;
-    return urlRegex.test(url);
-  };
   
   const seedDatabase = async () => {
-    const allProducts = [
-      ...eleganceProducts,
-      ...pumpCoverProducts,
-    ];
+    const allProducts = [...eleganceProducts, ...pumpCoverProducts];
   
     try {
       for (const product of allProducts) {
@@ -427,7 +425,7 @@ export const confidenceProducts = [
             category: product.category,
             imageUrl: isValidUrl(product.imageUrl)
               ? product.imageUrl
-              : "https://example.com/placeholder.jpg", // Fallback for invalid product image
+              : "https://example.com/placeholder.jpg", // Fallback for invalid image
             sizes: {
               create: product.sizes.map((size) => ({ size })),
             },
@@ -454,7 +452,7 @@ export const confidenceProducts = [
     }
   };
   
-  // Run the seed function
+  // Execute the seeding process
   seedDatabase().catch((error) => {
     console.error("Unexpected error:", error.message);
     process.exit(1);

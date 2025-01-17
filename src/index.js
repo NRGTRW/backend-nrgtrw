@@ -21,8 +21,8 @@ const prisma = new PrismaClient();
 // CORS Configuration
 const allowedOrigins = [
   "http://localhost:5173", // Local development
-  "https://www.nrgtrw.com",// Production domain
-  "https://nrgtrw.com",   // Production domain
+  "https://www.nrgtrw.com", // Production domain
+  "https://nrgtrw.com",    // Production domain
 ];
 
 app.use(
@@ -80,7 +80,7 @@ app.get("/api/db-health", async (req, res) => {
 // API Routes
 app.use("/api/auth", authRoutes);
 app.use("/api/profile", profileRoutes);
-app.use("/api/products", productRoutes);
+app.use("/api/products", productRoutes); // Products API
 app.use("/api/cart", cartRoutes);
 app.use("/api", itemRoutes);
 

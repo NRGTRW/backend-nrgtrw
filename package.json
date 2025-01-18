@@ -33,6 +33,7 @@
     "@prisma/client": "^6.2.1",
     "bcrypt": "^5.1.1",
     "cors": "^2.8.5",
+    "curl": "^0.1.4",
     "dotenv": "^16.4.7",
     "express": "^4.21.2",
     "express-rate-limit": "^7.5.0",

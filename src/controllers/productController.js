@@ -16,7 +16,8 @@ export const getProducts = async (req, res) => {
     res.status(500).json({ error: "Failed to fetch products." });
   }
 };
-export const getProductById = async (req, res, next) => {
+
+export const getProductById = async (req, res) => {
   const { id } = req.params;
   try {
     const product = await prisma.product.findUnique({
@@ -33,35 +34,7 @@ export const getProductById = async (req, res, next) => {
 
     res.status(200).json(product);
   } catch (error) {
-    next(error);
-  }
-};
-
-export const createProduct = async (req, res, next) => {
-  const { name, price, description, category, sizes, colors } = req.body;
-
-  try {
-    const newProduct = await prisma.product.create({
-      data: {
-        name,
-        price,
-        description,
-        category,
-        sizes: {
-          create: sizes.map((size) => ({ size })),
-        },
-        colors: {
-          create: colors.map((color) => ({
-            colorName: color.colorName,
-            imageUrl: color.imageUrl,
-            hoverImage: color.hoverImage,
-          })),
-        },
-      },
-    });
-
-    res.status(201).json(newProduct);
-  } catch (error) {
-    next(error);
+    console.error(`Error fetching product with ID ${id}:`, error.message);
+    res.status(500).json({ error: "Failed to fetch product." });
   }
 };

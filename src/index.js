@@ -11,6 +11,7 @@ import cartRoutes from "./routes/cartRoutes.js";
 import logger from "./utils/logger.js";
 import { PrismaClient } from "@prisma/client";
 
+
 dotenv.config();
 const app = express();
 const prisma = new PrismaClient();

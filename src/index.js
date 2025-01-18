@@ -11,16 +11,17 @@ import cartRoutes from "./routes/cartRoutes.js";
 import logger from "./utils/logger.js";
 import { PrismaClient } from "@prisma/client";
 
-
 dotenv.config();
 const app = express();
 const prisma = new PrismaClient();
 
 // CORS Configuration
 const allowedOrigins = [
-  "http://localhost:5173", // Frontend development environment
-  "http://localhost:5174", // Another local frontend instance
-  "https://your-production-domain.com", // Production domain
+  "http://localhost:5173",
+  "http://localhost:5174",
+  "https://api.nrgtrw.com",
+  "https://www.nrgtrw.com",
+  "htttps://nrgtrw.com",
 ];
 
 app.use(
@@ -32,8 +33,9 @@ app.use(
         callback(new Error("Not allowed by CORS"));
       }
     },
-    methods: ["GET", "POST", "PUT", "DELETE"],
-    allowedHeaders: ["Content-Type", "Authorization"],
+    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization", "x-access-token"],
+    credentials: true,
   })
 );
 
@@ -42,17 +44,11 @@ app.use(helmet());
 app.use(express.json());
 app.use(
   rateLimit({
-    windowMs: 15 * 60 * 1000, // 15 minutes
-    max: 100, // Limit each IP to 100 requests per window
+    windowMs: 15 * 60 * 1000,
+    max: 100,
     message: "Too many requests from this IP, please try again later.",
   })
 );
-
-// Logging Middleware (Optional)
-app.use((req, res, next) => {
-  console.log(`${req.method} ${req.url}`);
-  next();
-});
 
 // Default root route
 app.get("/", (req, res) => {

@@ -21,7 +21,7 @@ const allowedOrigins = [
   "http://localhost:5174",
   "https://api.nrgtrw.com",
   "https://www.nrgtrw.com",
-  "htttps://nrgtrw.com",
+  "https://nrgtrw.com",
 ];
 
 app.use(

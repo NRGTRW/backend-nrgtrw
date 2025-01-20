@@ -11,7 +11,6 @@ import cartRoutes from "./routes/cartRoutes.js";
 import { PrismaClient } from "@prisma/client";
 import wishlistRoutes from "./routes/wishlistRoutes.js";
 
-
 dotenv.config();
 const app = express();
 const prisma = new PrismaClient();
@@ -20,8 +19,14 @@ const prisma = new PrismaClient();
 const allowedOrigins = [
   "http://localhost:5173",
   "http://localhost:5174",
+<<<<<<< HEAD
   "https://nrgtrw.com",
   "https://www.nrgtrw.com",
+=======
+  "https://api.nrgtrw.com",
+  "https://www.nrgtrw.com",
+  "https://nrgtrw.com",
+>>>>>>> 3c9a99ef3612877e81e7a058fd45662d4069eecb
 ];
 
 app.use(
@@ -33,8 +38,9 @@ app.use(
         callback(new Error("Not allowed by CORS"));
       }
     },
-    methods: ["GET", "POST", "PUT", "DELETE"],
-    allowedHeaders: ["Content-Type", "Authorization"],
+    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization", "x-access-token"],
+    credentials: true,
   })
 );
 
@@ -44,7 +50,11 @@ app.use(express.json());
 app.use(
   rateLimit({
     windowMs: 15 * 60 * 1000,
+<<<<<<< HEAD
     max: 100000,
+=======
+    max: 100,
+>>>>>>> 3c9a99ef3612877e81e7a058fd45662d4069eecb
     message: "Too many requests from this IP, please try again later.",
   })
 );

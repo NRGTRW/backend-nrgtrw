@@ -18,22 +18,22 @@ export const getCart = async (req, res, next) => {
 };
 
 // Add to Cart
-export const addToCart = async (req, res, next) => {
-  try {
-    const token = req.headers.authorization?.split(" ")[1];
-    const { userId } = jwt.verify(token, process.env.JWT_SECRET);
-    const { productId, quantity } = req.body;
+export const addToCart = async (req, res) => {
+  const { userId, productId, quantity, selectedSize, selectedColor } = req.body;
 
-    const cartItem = await prisma.cart.create({
+  try {
+    const cartItem = await prisma.cartItem.create({
       data: {
         userId,
         productId,
-        quantity
+        quantity,
+        selectedSize,
+        selectedColor
       }
     });
-
     res.status(201).json(cartItem);
   } catch (error) {
-    next(error);
+    console.error("Error adding item to cart:", error);
+    res.status(500).json({ error: "Failed to add item to cart." });
   }
 };

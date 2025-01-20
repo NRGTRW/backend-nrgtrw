@@ -8,8 +8,8 @@ import authRoutes from "./routes/authRoutes.js";
 import profileRoutes from "./routes/profileRoutes.js";
 import productRoutes from "./routes/productRoutes.js";
 import cartRoutes from "./routes/cartRoutes.js";
-import logger from "./utils/logger.js";
 import { PrismaClient } from "@prisma/client";
+import wishlistRoutes from "./routes/wishlistRoutes.js";
 
 
 dotenv.config();
@@ -18,9 +18,10 @@ const prisma = new PrismaClient();
 
 // CORS Configuration
 const allowedOrigins = [
-  "http://localhost:5173", // Frontend development environment
-  "http://localhost:5174", // Another local frontend instance
-  "https://your-production-domain.com", // Production domain
+  "http://localhost:5173",
+  "http://localhost:5174",
+  "https://nrgtrw.com",
+  "https://www.nrgtrw.com",
 ];
 
 app.use(
@@ -42,13 +43,12 @@ app.use(helmet());
 app.use(express.json());
 app.use(
   rateLimit({
-    windowMs: 15 * 60 * 1000, // 15 minutes
-    max: 100, // Limit each IP to 100 requests per window
+    windowMs: 15 * 60 * 1000,
+    max: 100000,
     message: "Too many requests from this IP, please try again later.",
   })
 );
 
-// Logging Middleware (Optional)
 app.use((req, res, next) => {
   console.log(`${req.method} ${req.url}`);
   next();
@@ -60,9 +60,7 @@ app.get("/", (req, res) => {
 });
 
 // Health check route
-app.get("/api/health", (req, res) =>
-  res.status(200).json({ status: "Server is running smoothly!" })
-);
+app.get("/health", (req, res) => res.status(200).send("API is running."));
 
 // Database Health Check Route
 app.get("/api/db-health", async (req, res) => {
@@ -77,12 +75,22 @@ app.get("/api/db-health", async (req, res) => {
 
 // API Routes
 app.use("/api/auth", authRoutes);
-app.use("/api/profile", profileRoutes);
-app.use("/api/products", productRoutes);
+app.use("/api", profileRoutes); // Updated to align API route
+app.use('/api/products', productRoutes);
 app.use("/api/cart", cartRoutes);
+app.use('/api/wishlist', wishlistRoutes);
+app.get('/api/test-db', async (req, res) => {
+  try {
+    const result = await prisma.$queryRaw`SELECT 1`;
+    res.status(200).json({ success: true, result });
+  } catch (error) {
+    console.error("Database connection test failed:", error.message);
+    res.status(500).json({ error: "Database connection failed" });
+  }
+});
 
 // Catch-all route for undefined paths
-app.use((req, res, next) => {
+app.use((req, res) => {
   res.status(404).json({
     error: "The requested resource could not be found on this server.",
   });
@@ -91,8 +99,5 @@ app.use((req, res, next) => {
 // Global error handler
 app.use(errorMiddleware);
 
-// Start the server
 const PORT = process.env.PORT || 8080;
-app.listen(PORT, () => {
-  logger.info(`Server is running on port ${PORT}`);
-});
+app.listen(PORT, () => console.log(`Server running on port ${PORT}`));

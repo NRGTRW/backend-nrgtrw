@@ -13,14 +13,14 @@ const errorMiddleware = (err, req, res, next) => {
   if (err.name === "ValidationError") {
     return res.status(400).json({
       error: "Validation Error",
-      details: err.errors, // Specific validation error details
+      details: err.errors // Specific validation error details
     });
   }
 
   if (err.name === "UnauthorizedError") {
     return res.status(401).json({
       error: "Unauthorized",
-      message: "You are not authorized to access this resource.",
+      message: "You are not authorized to access this resource."
     });
   }
 
@@ -32,7 +32,7 @@ const errorMiddleware = (err, req, res, next) => {
     details:
       process.env.NODE_ENV === "production"
         ? undefined
-        : err.stack || err.details, // Stack trace only in non-production
+        : err.stack || err.details // Stack trace only in non-production
   });
 };
 

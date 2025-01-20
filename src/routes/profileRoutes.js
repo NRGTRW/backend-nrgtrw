@@ -1,11 +1,21 @@
 import express from "express";
-import { getProfile, updateProfile } from "../controllers/profileController.js";
 import authMiddleware from "../middlewares/authMiddleware.js";
+import { updateProfile } from "../controllers/profileController.js";
 
 const router = express.Router();
 
-router.use(authMiddleware);
-router.get("/", getProfile);
-router.put("/", updateProfile);
+// Protect the profile route with the auth middleware
+router.get("/profile", authMiddleware, (req, res) => {
+    console.log("Route hit: /api/profile");
+    if (req.user) {
+      console.log("User data:", req.user);
+      res.json(req.user);
+    } else {
+      console.log("No user data");
+      res.status(404).json({ error: "User not found" });
+    }
+  });
+  
+  router.put("/profile", authMiddleware,updateProfile);
 
 export default router;

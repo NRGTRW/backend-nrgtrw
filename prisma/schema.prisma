@@ -9,72 +9,94 @@ datasource db {
 
 model User {
   id             Int        @id @default(autoincrement())
+  name           String
   email          String     @unique
   password       String
-  name           String
   profilePicture String?
   address        String?
-  phone          String?
-  isAdmin        Boolean    @default(false)
   createdAt      DateTime   @default(now())
-  cart           CartItem[]
-  orders         Order[]
+  updatedAt      DateTime   @updatedAt
+  Wishlist       Wishlist[]
+  CartItem       CartItem[]
+  Order          Order[]
 }
 
 model Product {
-  id          Int            @id @default(autoincrement())
+  id          Int         @id @default(autoincrement())
   name        String
   price       Float
   description String
-  imageUrl    String?        @db.Text
-  category    String
-  createdAt   DateTime       @default(now())
-  sizes       ProductSize[]
-  colors      ProductColor[]
+  Category    Category?   @relation(fields: [categoryId], references: [id])
+  categoryId  Int?
+  imageUrl    String
+  stock       Int
+  sizes       Size[]
+  colors      Color[]
+  wishlist    Wishlist[]
   cartItems   CartItem[]
   orderItems  OrderItem[]
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
 }
 
-model ProductColor {
-  id         Int     @id @default(autoincrement())
-  colorName  String
-  imageUrl   String  @db.Text
-  hoverImage String  @db.Text
-  product    Product @relation(fields: [productId], references: [id], onDelete: Cascade)
-  productId  Int
+model Category {
+  id       Int       @id @default(autoincrement())
+  name     String    @unique // Ensure name is unique
+  products Product[]
 }
 
-model ProductSize {
+model Size {
   id        Int     @id @default(autoincrement())
   size      String
   product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
   productId Int
 }
 
+model Color {
+  id         Int     @id @default(autoincrement())
+  colorName  String
+  imageUrl   String
+  hoverImage String
+  product    Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+  productId  Int
+}
+
+model Wishlist {
+  id            Int      @id @default(autoincrement())
+  userId        Int
+  productId     Int
+  selectedSize  String
+  selectedColor String
+  quantity      Int      @default(1)
+
+  user    User    @relation(fields: [userId], references: [id])
+  product Product @relation(fields: [productId], references: [id])
+}
+
+
 model CartItem {
   id        Int     @id @default(autoincrement())
+  user      User    @relation(fields: [userId], references: [id], onDelete: Cascade)
   userId    Int
+  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
   productId Int
   quantity  Int
-  user      User    @relation(fields: [userId], references: [id], onDelete: Cascade)
-  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
 }
 
 model Order {
-  id          Int         @id @default(autoincrement())
-  userId      Int
-  totalAmount Float
-  createdAt   DateTime    @default(now())
-  user        User        @relation(fields: [userId], references: [id], onDelete: Cascade)
-  orderItems  OrderItem[]
+  id        Int         @id @default(autoincrement())
+  user      User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId    Int
+  items     OrderItem[]
+  createdAt DateTime    @default(now())
+  updatedAt DateTime    @updatedAt
 }
 
 model OrderItem {
   id        Int     @id @default(autoincrement())
+  order     Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
   orderId   Int
+  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
   productId Int
   quantity  Int
-  price     Float
-  order     Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
-  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
 }

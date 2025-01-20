@@ -17,6 +17,7 @@ export class NotFoundError extends CustomError {
 }
 
 if (!process.env.PORT || !process.env.DATABASE_URL) {
-  throw new Error("Missing essential environment variables. Check your .env file.");
+  throw new Error(
+    "Missing essential environment variables. Check your .env file."
+  );
 }
-

@@ -14,6 +14,7 @@ model User {
   password       String
   profilePicture String?
   address        String?
+  phone          String?
   createdAt      DateTime   @default(now())
   updatedAt      DateTime   @updatedAt
   Wishlist       Wishlist[]

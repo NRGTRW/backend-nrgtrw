@@ -1,6 +1,8 @@
 import { PrismaClient } from "@prisma/client";
 import dotenv from "dotenv";
 import bcrypt from "bcrypt";
+import { encrypt } from '../src/utils/cryptoUtils.js';
+
 
 dotenv.config();
 
@@ -450,7 +452,6 @@ const seedDatabase = async () => {
           }))
         : [];
 
-      // Create product entry
       await prisma.product.create({
         data: {
           name: product.name,
@@ -482,25 +483,40 @@ const seedDatabase = async () => {
     await prisma.$disconnect();
   }
 };
+
+
 const seedUsers = async () => {
-  const hashedPassword = await bcrypt.hash("password123", 10); // Use bcrypt for password hashing
+  try {
+    const hashedPassword = await bcrypt.hash("Nikcho2006", 10);
+    const encryptedAddress = encrypt("Lyulin 8, bl.815, vh.A");
+    const encryptedPhone = encrypt("0897338635");
 
-  const user = await prisma.user.create({
-    data: {
-      email: "testuser@example.com",
-      password: hashedPassword,
-      name: "Test",
-      // lastName: "User",
-    },
-  });
+    const user = await prisma.user.create({
+      data: {
+        email: "nrgoranov@gmail.com",
+        password: hashedPassword,
+        name: "Nikolay Goranov",
+        address: encryptedAddress, // Store encrypted address
+        phone: encryptedPhone,     // Store encrypted phone
+      },
+    });
 
-  console.log(`Created user: ${user.email}`);
+    console.log(`Created user: ${user.email}`);
+  } catch (error) {
+    console.error("Error seeding users:", error.message);
+  }
 };
 
-seedUsers();
 
+const main = async () => {
+  try {
+    await seedUsers();
+    await seedDatabase();
+  } catch (error) {
+    console.error("Unexpected error:", error.message);
+  } finally {
+    process.exit(0);
+  }
+};
 
-seedDatabase().catch((error) => {
-  console.error("Unexpected error:", error.message);
-  process.exit(1);
-});
+main();

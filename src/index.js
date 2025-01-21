@@ -19,14 +19,9 @@ const prisma = new PrismaClient();
 const allowedOrigins = [
   "http://localhost:5173",
   "http://localhost:5174",
-<<<<<<< HEAD
-  "https://nrgtrw.com",
-  "https://www.nrgtrw.com",
-=======
   "https://api.nrgtrw.com",
   "https://www.nrgtrw.com",
   "https://nrgtrw.com",
->>>>>>> 3c9a99ef3612877e81e7a058fd45662d4069eecb
 ];
 
 app.use(
@@ -50,12 +45,7 @@ app.use(express.json());
 app.use(
   rateLimit({
     windowMs: 15 * 60 * 1000,
-<<<<<<< HEAD
     max: 100000,
-=======
-    max: 100,
->>>>>>> 3c9a99ef3612877e81e7a058fd45662d4069eecb
-    message: "Too many requests from this IP, please try again later.",
   })
 );
 
@@ -86,10 +76,10 @@ app.get("/api/db-health", async (req, res) => {
 // API Routes
 app.use("/api/auth", authRoutes);
 app.use("/api", profileRoutes); // Updated to align API route
-app.use('/api/products', productRoutes);
+app.use("/api/products", productRoutes);
 app.use("/api/cart", cartRoutes);
-app.use('/api/wishlist', wishlistRoutes);
-app.get('/api/test-db', async (req, res) => {
+app.use("/api/wishlist", wishlistRoutes);
+app.get("/api/test-db", async (req, res) => {
   try {
     const result = await prisma.$queryRaw`SELECT 1`;
     res.status(200).json({ success: true, result });
@@ -109,5 +99,5 @@ app.use((req, res) => {
 // Global error handler
 app.use(errorMiddleware);
 
-const PORT = process.env.PORT || 8080;
+const PORT = process.env.PORT || 8088;
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));

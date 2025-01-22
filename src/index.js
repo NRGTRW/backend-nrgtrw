@@ -3,15 +3,21 @@ import dotenv from "dotenv";
 import helmet from "helmet";
 import cors from "cors";
 import rateLimit from "express-rate-limit";
+import path from "path";
+import { fileURLToPath } from "url";
 import errorMiddleware from "./middlewares/errorMiddleware.js";
 import authRoutes from "./routes/authRoutes.js";
 import profileRoutes from "./routes/profileRoutes.js";
 import productRoutes from "./routes/productRoutes.js";
 import cartRoutes from "./routes/cartRoutes.js";
-import { PrismaClient } from "@prisma/client";
 import wishlistRoutes from "./routes/wishlistRoutes.js";
+import { PrismaClient } from "@prisma/client";
 
 dotenv.config();
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
 const app = express();
 const prisma = new PrismaClient();
 
@@ -44,22 +50,36 @@ app.use(helmet());
 app.use(express.json());
 app.use(
   rateLimit({
-    windowMs: 15 * 60 * 1000,
-    max: 100000,
+    windowMs: 15 * 60 * 1000, // 15 minutes
+    max: 1000, // Limit each IP to 1000 requests per windowMs
   })
 );
 
+// Static File Serving for Uploaded Files
+app.use(
+  "/uploads",
+  (req, res, next) => {
+    res.setHeader("Access-Control-Allow-Origin", "*");
+    res.setHeader("Cross-Origin-Resource-Policy", "cross-origin");
+    res.setHeader("Cross-Origin-Embedder-Policy", "require-corp");
+    res.setHeader("Cross-Origin-Opener-Policy", "same-origin");
+    next();
+  },
+  express.static(path.join(__dirname, "uploads"))
+);
+
+// Request Logging Middleware
 app.use((req, res, next) => {
-  console.log(`${req.method} ${req.url}`);
+  console.log(`[${new Date().toISOString()}] ${req.method} ${req.url}`);
   next();
 });
 
-// Default root route
+// Root Route
 app.get("/", (req, res) => {
   res.send("Welcome to the NRG Backend Server! The API is running.");
 });
 
-// Health check route
+// Health Check Route
 app.get("/health", (req, res) => res.status(200).send("API is running."));
 
 // Database Health Check Route
@@ -75,10 +95,12 @@ app.get("/api/db-health", async (req, res) => {
 
 // API Routes
 app.use("/api/auth", authRoutes);
-app.use("/api", profileRoutes); // Updated to align API route
+app.use("/api", profileRoutes);
 app.use("/api/products", productRoutes);
 app.use("/api/cart", cartRoutes);
 app.use("/api/wishlist", wishlistRoutes);
+
+// Test Database Route
 app.get("/api/test-db", async (req, res) => {
   try {
     const result = await prisma.$queryRaw`SELECT 1`;
@@ -89,15 +111,18 @@ app.get("/api/test-db", async (req, res) => {
   }
 });
 
-// Catch-all route for undefined paths
+// Catch-All Route for Undefined Paths
 app.use((req, res) => {
   res.status(404).json({
     error: "The requested resource could not be found on this server.",
   });
 });
 
-// Global error handler
+// Global Error Handler
 app.use(errorMiddleware);
 
+// Server Listener
 const PORT = process.env.PORT || 8088;
-app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+app.listen(PORT, () => {
+  console.log(`[${new Date().toISOString()}] Server running  on port ${PORT}`);
+});

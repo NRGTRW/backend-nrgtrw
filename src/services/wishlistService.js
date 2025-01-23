@@ -8,28 +8,22 @@ const getWishlistByUser = async (userId) => {
 };
 
 const addToWishlist = async (userId, item) => {
-  const existingItem = await prisma.wishlist.findFirst({
+  return await prisma.wishlist.upsert({
     where: {
-      userId,
-      productId: item.productId,
-      selectedSize: item.selectedSize,
-      selectedColor: item.selectedColor,
+      userId_productId: { userId, productId: item.productId }, // Unique constraint composite key
     },
+    create: { userId, ...item },
+    update: { ...item },
   });
+};
 
-  if (existingItem) {
-    throw new Error("Item already exists in wishlist.");
-  }
-
-  return await prisma.wishlist.create({
-    data: {
-      userId,
-      productId: item.productId,
-      selectedSize: item.selectedSize,
-      selectedColor: item.selectedColor,
-      quantity: item.quantity || 1,
-    },
+const moveToWishlist = async (userId, item) => {
+  // First remove from cart
+  await prisma.cart.deleteMany({
+    where: { userId, productId: item.productId },
   });
+  // Then add to wishlist
+  return await addToWishlist(userId, item);
 };
 
 const removeFromWishlist = async (userId, { productId, selectedSize, selectedColor }) => {
@@ -43,4 +37,4 @@ const removeFromWishlist = async (userId, { productId, selectedSize, selectedCol
   });
 };
 
-export default { getWishlistByUser, addToWishlist, removeFromWishlist };
+export default { getWishlistByUser, addToWishlist, moveToWishlist, removeFromWishlist };

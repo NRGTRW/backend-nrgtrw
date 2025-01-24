@@ -22,7 +22,6 @@ model User {
   Wishlist       Wishlist[]
 }
 
-
 model Product {
   id          Int         @id @default(autoincrement())
   name        String

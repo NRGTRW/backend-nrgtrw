@@ -14,7 +14,7 @@ model User {
   name           String
   address        String?
   phone          String? // Ensure this is included
-  profilePicture String?
+  profilePicture String?  @db.VarChar(512)
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
   CartItem       CartItem[]

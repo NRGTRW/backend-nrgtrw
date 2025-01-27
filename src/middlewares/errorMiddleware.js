@@ -2,37 +2,31 @@ import logger from "../utils/logger.js";
 
 const errorMiddleware = (err, req, res, next) => {
   const statusCode = err.statusCode || 500;
-  const errorMessage =
-    err.message || "An unexpected error occurred on the server.";
+  let errorMessage = err.message || "An unexpected error occurred";
 
-  // Log detailed error for debugging
-  logger.error(`[${req.method} ${req.originalUrl}] Error: ${errorMessage}`);
+  // Handle AWS S3 errors specifically
+  if (err.code === 'NoSuchBucket' || err.code === 'CredentialsError') {
+    errorMessage = "Storage service unavailable";
+    logger.error(`AWS Error: ${err.code} - ${err.message}`);
+  }
+
+  // Handle database connection errors
+  if (err.message.includes('prisma') || err.message.includes('database')) {
+    errorMessage = "Database connection error";
+    statusCode = 503;
+  }
+
+  // Log detailed error
+  logger.error(`[${req.method} ${req.originalUrl}] ${errorMessage}`);
   logger.error(err.stack);
 
-  // Handle specific error types
-  if (err.name === "ValidationError") {
-    return res.status(400).json({
-      error: "Validation Error",
-      details: err.errors // Specific validation error details
-    });
-  }
-
-  if (err.name === "UnauthorizedError") {
-    return res.status(401).json({
-      error: "Unauthorized",
-      message: "You are not authorized to access this resource."
-    });
-  }
-
-  // Send generic error response
   res.status(statusCode).json({
     error: errorMessage,
     statusCode,
-    timestamp: new Date().toISOString(),
-    details:
-      process.env.NODE_ENV === "production"
-        ? undefined
-        : err.stack || err.details // Stack trace only in non-production
+    details: process.env.NODE_ENV === 'production' ? undefined : {
+      stack: err.stack,
+      type: err.name
+    }
   });
 };
 

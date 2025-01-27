@@ -32,6 +32,7 @@
   "dependencies": {
     "@aws-sdk/client-s3": "^3.735.0",
     "@prisma/client": "^6.2.1",
+    "aws": "^0.0.3-2",
     "aws-sdk": "^2.1692.0",
     "bcrypt": "^5.1.1",
     "bcryptjs": "^2.4.3",
@@ -47,6 +48,7 @@
     "openssl": "^2.0.0",
     "swr": "^2.3.0",
     "uuid": "^11.0.5",
+    "version": "^0.1.2",
     "winston": "^3.17.0",
     "zod": "^3.24.1"
   }

@@ -493,17 +493,20 @@ const seedUsers = async () => {
 
     const user = await prisma.user.create({
       data: {
-        email: "nrgoranov@gmail.com",
+        email: "nrgtrwsales@gmail.com",
         password: hashedPassword,
         name: "Nikolay Goranov",
         address: encryptedAddress, // Store encrypted address
         phone: encryptedPhone,     // Store encrypted phone
+        isVerified: true,          // ✅ Ensure this is included
       },
     });
 
-    console.log(`Created user: ${user.email}`);
+    console.log("✅ Seeded User:", user); // 🔍 Debugging
   } catch (error) {
-    console.error("Error seeding users:", error.message);
+    console.error("❌ Error seeding user:", error);
+  } finally {
+    await prisma.$disconnect();
   }
 };
 

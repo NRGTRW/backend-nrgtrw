@@ -13,10 +13,13 @@ model User {
   password       String
   name           String
   address        String?
-  phone          String? // Ensure this is included
+  phone          String?
   profilePicture String?  @db.VarChar(512)
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
+  isVerified     Boolean  @default(false)  
+  otp            Int?    
+  otpExpiresAt   DateTime? 
   CartItem       CartItem[]
   Order          Order[]
   Wishlist       Wishlist[]

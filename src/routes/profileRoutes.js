@@ -6,7 +6,7 @@ import {
   saveProfilePicture
 } from "../controllers/profileController.js";
 import { upload, handleMulterErrors } from "../utils/uploadConfig.js";
-import authMiddleware from "../middlewares/authMiddleware.js";
+import { authMiddleware, protect } from "../middlewares/authMiddleware.js";
 
 const router = express.Router();
 
@@ -31,7 +31,7 @@ router.put("/profile/save",
 );
 
 // Existing routes remain unchanged
-router.get("/profile", authMiddleware, getProfile);
+router.get("/profile", protect, authMiddleware, getProfile);
 router.put("/profile", authMiddleware, updateProfile);
 
 export default router;

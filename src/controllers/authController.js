@@ -12,38 +12,89 @@ export const signup = async (req, res) => {
     const { name, email, password } = req.body;
 
     if (!name || !email || !password) {
-      return res.status(400).json({ error: "All fields are required" });
+      return res.status(400).json({ error: "All fields are required." });
     }
 
     const existingUser = await prisma.user.findUnique({ where: { email } });
     if (existingUser) {
-      return res.status(400).json({ error: "User already exists" });
+      return res.status(400).json({ error: "User already exists." });
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);
+    const otp = Math.floor(100000 + Math.random() * 900000); // Generate 6-digit OTP
 
-    const newUser = await prisma.user.create({
+    // ✅ Remove `newUser` since we don't need it
+    await prisma.user.create({
       data: {
         name,
         email,
         password: hashedPassword,
+        isVerified: false,
+        otp,
+        otpExpiresAt: new Date(Date.now() + 10 * 60 * 1000), // OTP valid for 10 minutes
       },
     });
 
-    const token = jwt.sign({ id: newUser.id }, process.env.JWT_SECRET, {
+    // ✅ Send OTP email
+    await transporter.sendMail({
+      from: process.env.EMAIL_USER,
+      to: email,
+      subject: "Verify Your Account",
+      html: `
+        <div style="font-family: Arial, sans-serif; text-align: center; padding: 20px;">
+          <h2 style="color: #333;">Verify Your Email</h2>
+          <p>Use the following OTP to verify your account:</p>
+          <div style="font-size: 24px; font-weight: bold; background: #f8f8f8; padding: 10px; display: inline-block;">
+            ${otp}
+          </div>
+          <p style="margin-top: 10px;">This code is valid for <strong>10 minutes</strong>.</p>
+          <p>If you did not request this, you can safely ignore this email.</p>
+        </div>
+      `,
+    });
+
+    res.status(201).json({ message: "Signup successful! Please verify your email with the OTP sent." });
+  } catch (error) {
+    console.error("Signup error:", error.message);
+    res.status(500).json({ error: "Failed to create user." });
+  }
+};
+
+
+// OTP Verification function
+export const verifyOTP = async (req, res) => {
+  try {
+    const { email, otp } = req.body;
+
+    if (!email || !otp) {
+      return res.status(400).json({ error: "Email and OTP are required." });
+    }
+
+    const user = await prisma.user.findUnique({ where: { email } });
+
+    if (!user || user.otp !== parseInt(otp) || user.otpExpiresAt < new Date()) {
+      return res.status(400).json({ error: "Invalid or expired OTP." });
+    }
+
+    // ✅ Mark the user as verified
+    await prisma.user.update({
+      where: { email },
+      data: { isVerified: true, otp: null, otpExpiresAt: null },
+    });
+
+    // ✅ Generate a new token
+    const token = jwt.sign({ id: user.id }, process.env.JWT_SECRET, {
       expiresIn: "1h",
     });
 
-    res.status(201).json({
-      message: "User created successfully",
-      user: { id: newUser.id, name: newUser.name, email: newUser.email },
-      token,
-    });
+    res.status(200).json({ message: "Account verified successfully.", token });
   } catch (error) {
-    console.error("Signup error:", error.message);
-    res.status(500).json({ error: error.message || "Failed to create user" });
+    console.error("OTP verification error:", error.message);
+    res.status(500).json({ error: "Failed to verify OTP." });
   }
 };
+
+
 
 // Login function
 export const login = async (req, res) => {
@@ -81,12 +132,13 @@ export const login = async (req, res) => {
 
 // Transporter for sending emails
 const transporter = nodemailer.createTransport({
-  service: "Gmail",
+  service: "gmail",
   auth: {
     user: process.env.EMAIL_USER,
     pass: process.env.EMAIL_PASSWORD,
   },
 });
+
 
 // Password reset function
 export const resetPassword = async (req, res) => {

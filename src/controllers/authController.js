@@ -108,16 +108,31 @@ export const resetPassword = async (req, res) => {
 
     const resetLink = `${process.env.CLIENT_URL}/reset-password/${resetToken}`;
 
-    // Send email with reset link
-    await transporter.sendMail({
+    const mailOptions = {
       from: process.env.EMAIL_USER,
       to: user.email,
       subject: "Password Reset Request",
-      text: `You requested a password reset. Click the link to reset your password: ${resetLink}`,
-      html: `<p>You requested a password reset. Click the link below to reset your password:</p>
-             <a href="${resetLink}">${resetLink}</a>`,
-    });
+      html: `
+        <div style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; padding: 20px; border: 1px solid #ddd; border-radius: 8px; max-width: 600px; margin: auto;">
+          <h2 style="color: #555; text-align: center;">Password Reset Request</h2>
+          <p>Hi <strong>${user.name || "there"}</strong>,</p>
+          <p>You recently requested to reset your password. Click the button below to reset it:</p>
+          <div style="text-align: center; margin: 20px 0;">
+            <a href="${resetLink}" style="display: inline-block; background-color: #007bff; color: #fff; text-decoration: none; padding: 12px 20px; border-radius: 5px; font-weight: bold;">Reset Password</a>
+          </div>
+          <p>If you did not request this, you can safely ignore this email.</p>
+          <p style="font-size: 12px; color: #999;">This link is valid for 15 minutes.</p>
+          <hr style="border: none; border-top: 1px solid #eee;" />
+          <footer style="text-align: center; color: #888; font-size: 12px;">
+            <p>Need help? Contact our <a href="mailto:support@example.com" style="color: #007bff;">support team</a>.</p>
+            <p>&copy; ${new Date().getFullYear()} Your Company Name</p>
+          </footer>
+        </div>
+      `,
+    };
+    
 
+    await transporter.sendMail(mailOptions);
     res.status(200).json({ message: "Password reset email sent successfully" });
   } catch (error) {
     console.error("Password reset error:", error.message);
@@ -125,13 +140,14 @@ export const resetPassword = async (req, res) => {
   }
 };
 
+
 // Update password function (for handling after user clicks the reset link)
 export const updatePassword = async (req, res) => {
   try {
     const { resetToken, newPassword } = req.body;
 
     if (!resetToken || !newPassword) {
-      return res.status(400).json({ error: "All fields are required" });
+      return res.status(400).json({ error: "All fields are required." });
     }
 
     const decoded = jwt.verify(resetToken, process.env.JWT_SECRET);
@@ -143,9 +159,9 @@ export const updatePassword = async (req, res) => {
       data: { password: hashedPassword },
     });
 
-    res.status(200).json({ message: "Password updated successfully" });
+    res.status(200).json({ message: "Password updated successfully." });
   } catch (error) {
     console.error("Update password error:", error.message);
-    res.status(500).json({ error: "Failed to update password" });
+    res.status(500).json({ error: "Failed to update password." });
   }
 };

@@ -35,12 +35,12 @@ model Product {
   categoryId  Int?
   stock       Int
   updatedAt   DateTime    @updatedAt
-  cartItems   CartItem[]
-  colors      Color[]
-  orderItems  OrderItem[]
   Category    Category?   @relation(fields: [categoryId], references: [id])
-  sizes       Size[]
+  colors      Color[]
+  sizes       ProductSize[]
   wishlist    Wishlist[]
+  cartItems   CartItem[]
+  orderItems  OrderItem[]
 
   @@index([categoryId], map: "Product_categoryId_fkey")
 }
@@ -52,12 +52,20 @@ model Category {
 }
 
 model Size {
-  id        Int     @id @default(autoincrement())
-  size      String
-  productId Int
-  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+  id     Int            @id @default(autoincrement())
+  size   String         @unique
+  products ProductSize[]
+}
 
-  @@index([productId], map: "Size_productId_fkey")
+model ProductSize {
+  id        Int      @id @default(autoincrement())
+  productId Int
+  sizeId    Int
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  size      Size     @relation(fields: [sizeId], references: [id], onDelete: Cascade)
+
+  @@index([productId], map: "ProductSize_productId_fkey")
+  @@index([sizeId], map: "ProductSize_sizeId_fkey")
 }
 
 model Color {

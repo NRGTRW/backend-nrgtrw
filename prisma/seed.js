@@ -10,16 +10,6 @@ const BASE_URL =
   process.env.IMAGE_BASE_URL || "https://example.com/default-images";
 const prisma = new PrismaClient();
 
-const fallbackImage = "https://example.com/fallback.jpg";
-
-const isValidUrl = (url) => {
-  try {
-    new URL(url);
-    return true;
-  } catch {
-    return false;
-  }
-};
 
 const eleganceProducts = [
   {
@@ -30,7 +20,7 @@ const eleganceProducts = [
       "A chic, cropped turtleneck made with sustainable materials. Perfect for elegant evenings or casual outings.",
     category: "Elegance",
     imageUrl: `${BASE_URL}/images/WhiteCroppedTurtuleneck.webp`,
-    sizes: ["S", "M", "L", "XL"],
+    
     stock: 100,
     colors: [
       {
@@ -63,7 +53,7 @@ const eleganceProducts = [
       "Classic turtleneck designed for comfort and warmth, featuring versatile color options.",
     category: "Elegance",
     imageUrl: `${BASE_URL}/images/WhiteMTN.webp`,
-    sizes: ["S", "M", "L", "XL"],
+    
     stock: 100,
     colors: [
       {
@@ -96,7 +86,7 @@ const eleganceProducts = [
       "A premium shirt with tailored cuts, made from the finest fabrics for a perfect fit.",
     category: "Elegance",
     imageUrl: `${BASE_URL}/images/WhiteShirt.webp`,
-    sizes: ["S", "M", "L", "XL"],
+    
     stock: 100,
     colors: [
       {
@@ -134,7 +124,7 @@ const eleganceProducts = [
       "A stylish and elegant bamboo t-shirt with a unique design. Made from soft, durable bamboo.",
     category: "Elegance",
     imageUrl: `${BASE_URL}/images/WhiteBambooT.webp`,
-    sizes: ["S", "M", "L", "XL"],
+    
     stock: 100,
     colors: [
       {
@@ -175,7 +165,7 @@ const pumpCoverProducts = [
       "Sleek Samurai-inspired pants designed for movement and style.",
     category: "Pump Covers",
     imageUrl: `${BASE_URL}/images/BlackSamurai.webp`,
-    sizes: ["S", "M", "L", "XL"],
+    
     stock: 100,
     colors: [
       {
@@ -207,7 +197,7 @@ const pumpCoverProducts = [
     description: "Warm, oversized hoodie ideal for cozy days or workouts.",
     category: "Pump Covers",
     imageUrl: `${BASE_URL}/images/BlackHoodie.webp`,
-    sizes: ["S", "M", "L", "XL"],
+    
     stock: 100,
     colors: [
       {
@@ -240,7 +230,7 @@ const pumpCoverProducts = [
       "Comfortable shorts with a premium design, perfect for sports or leisure.",
     category: "Pump Covers",
     imageUrl: `${BASE_URL}/images/BlackShorts.webp`,
-    sizes: ["S", "M", "L", "XL"],
+    
     stock: 100,
     colors: [
       {
@@ -273,7 +263,7 @@ const pumpCoverProducts = [
       "Casual and versatile T-shirt for everyday wear, available in a variety of colors.",
     category: "Pump Covers",
     imageUrl: `${BASE_URL}/images/BlackT.webp`,
-    sizes: ["S", "M", "L", "XL"],
+    
     stock: 100,
     colors: [
       {
@@ -308,7 +298,7 @@ const pumpCoverProducts = [
 //         "Sleek Samurai-inspired pants designed for movement and style.",
 //       category: "Confidence",
 //       imageUrl: `${BASE_URL}/images/BlackSamurai.webp`,
-// sizes: ["S", "M", "L", "XL"],
+// 
 // stock: 100,
 //       colors: [
 //         {
@@ -340,7 +330,7 @@ const pumpCoverProducts = [
 //       description: "Warm, oversized hoodie ideal for cozy days or workouts.",
 //       category: "Confidence",
 //       imageUrl: `${BASE_URL}/images/BlackHoodie.webp`,
-//   sizes: ["S", "M", "L", "XL"],
+//   
 // stock: 100,
 //       colors: [
 //         {
@@ -373,7 +363,7 @@ const pumpCoverProducts = [
 //         "Comfortable shorts with a premium design, perfect for sports or leisure.",
 //       category: "Confidence",
 //       imageUrl: `${BASE_URL}/images/BlackShorts.webp`,
-//   sizes: ["S", "M", "L", "XL"],
+//   
 // stock: 100,
 //       colors: [
 //         {
@@ -406,7 +396,7 @@ const pumpCoverProducts = [
 //         "Casual and versatile T-shirt for everyday wear, available in a variety of colors.",
 //       category: "Confidence",
 //       imageUrl: `${BASE_URL}/images/BlackT.webp`,
-//   sizes: ["S", "M", "L", "XL"],
+//   
 // stock: 100,
 //       colors: [
 //         {
@@ -432,59 +422,34 @@ const pumpCoverProducts = [
 //       ]
 //     }
 //   ];
+const fallbackImage = "https://example.com/fallback.jpg";
 
-const seedDatabase = async () => {
-  const allProducts = [...eleganceProducts, ...pumpCoverProducts]; // Combine all product arrays
-
+const isValidUrl = (url) => {
   try {
-    for (const product of allProducts) {
-      console.log(`Processing product: ${product.name}`);
-
-      // Ensure sizes and colors exist before attempting to create them
-      const sizesData = product.sizes
-        ? product.sizes.map((size) => ({ size }))
-        : [];
-      const colorsData = product.colors
-        ? product.colors.map((color) => ({
-            colorName: color.colorName || "Default Color", // Fallback for color name
-            imageUrl: isValidUrl(color.image) ? color.image : fallbackImage, // Validate image URL
-            hoverImage: isValidUrl(color.hoverImage) ? color.hoverImage : fallbackImage, // Validate hover image URL
-          }))
-        : [];
-
-      await prisma.product.create({
-        data: {
-          name: product.name,
-          price: product.price,
-          description: product.description,
-          imageUrl: isValidUrl(product.imageUrl) ? product.imageUrl : fallbackImage,
-          stock: product.stock,
-          Category: {
-            connectOrCreate: {
-              where: { name: product.category }, // Match by unique field
-              create: { name: product.category }, // Create if not found
-            },
-          },
-          sizes: {
-            create: sizesData,
-          },
-          colors: {
-            create: colorsData,
-          },
-        },
-      });
-      console.log(`Inserted product: ${product.name}`);
-    }
-    console.log("Database seeded successfully!");
-  } catch (error) {
-    console.error("Error while seeding database:", error.message);
-    if (error.meta) console.error("Meta Information:", error.meta);
-  } finally {
-    await prisma.$disconnect();
+    new URL(url);
+    return true;
+  } catch {
+    return false;
   }
 };
 
+const globalSizes = ["S", "M", "L", "XL"];
+const seedSizes = async () => {
+  try {
+    for (const size of globalSizes) {
+      await prisma.size.upsert({
+        where: { size },
+        update: {},
+        create: { size },
+      });
+    }
+    console.log("✅ Seeded global sizes:", globalSizes);
+  } catch (error) {
+    console.error("❌ Error seeding sizes:", error.message);
+  }
+};
 
+// Seed users
 const seedUsers = async () => {
   try {
     const hashedPassword = await bcrypt.hash("Nikcho2006", 10);
@@ -496,30 +461,79 @@ const seedUsers = async () => {
         email: "nrgtrwsales@gmail.com",
         password: hashedPassword,
         name: "Nikolay Goranov",
-        address: encryptedAddress, // Store encrypted address
-        phone: encryptedPhone,     // Store encrypted phone
-        isVerified: true,          // ✅ Ensure this is included
+        address: encryptedAddress,
+        phone: encryptedPhone,
+        isVerified: true,
       },
     });
 
-    console.log("✅ Seeded User:", user); // 🔍 Debugging
+    console.log("✅ Seeded User:", user);
   } catch (error) {
-    console.error("❌ Error seeding user:", error);
-  } finally {
-    await prisma.$disconnect();
+    console.error("❌ Error seeding user:", error.message);
   }
 };
 
-
-const main = async () => {
+// Seed products
+const seedProducts = async (products) => {
   try {
-    await seedUsers();
-    await seedDatabase();
+    for (const product of products) {
+      console.log(`Processing product: ${product.name}`);
+
+      // Fetch global sizes
+      const globalSizes = await prisma.size.findMany({
+        where: { size: { in: product.sizes } },
+      });
+
+      const colorsData = product.colors?.map((color) => ({
+        colorName: color.colorName || "Default Color",
+        imageUrl: isValidUrl(color.image) ? color.image : fallbackImage,
+        hoverImage: isValidUrl(color.hoverImage) ? color.hoverImage : fallbackImage,
+      })) || [];
+
+      await prisma.product.create({
+        data: {
+          name: product.name,
+          price: product.price,
+          description: product.description,
+          imageUrl: isValidUrl(product.imageUrl) ? product.imageUrl : fallbackImage,
+          stock: product.stock,
+          Category: {
+            connectOrCreate: {
+              where: { name: product.category },
+              create: { name: product.category },
+            },
+          },
+          colors: { create: colorsData },
+          sizes: {
+            create: globalSizes.map((size) => ({
+              sizeId: size.id,
+            })),
+          },
+        },
+      });
+
+      console.log(`Inserted product: ${product.name}`);
+    }
+    console.log("Database seeded successfully!");
   } catch (error) {
-    console.error("Unexpected error:", error.message);
-  } finally {
-    process.exit(0);
+    console.error("❌ Error while seeding database:", error.message);
+    if (error.meta) console.error("Meta Information:", error.meta);
   }
 };
 
-main();
+// Seed database
+const main = async () => {
+  console.log("🌱 Seeding database...");
+  await seedSizes();
+  await seedUsers();
+
+  const products = [...eleganceProducts, ...pumpCoverProducts]; // Combine all product arrays
+  await seedProducts(products);
+
+  console.log("🌱 Seeding completed!");
+};
+
+main().catch((error) => {
+  console.error("Unexpected error during seeding:", error.message);
+  process.exit(1);
+});

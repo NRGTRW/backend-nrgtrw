@@ -6,10 +6,10 @@ import {
 
 const router = express.Router();
 
-// Route for fetching all products
+// GET /products (fetch all products)
 router.get("/", getAllProducts);
 
-// Route for fetching a single product by ID
+// GET /products/:id (fetch single product by ID)
 router.get("/:id", getProductById);
 
 export default router;

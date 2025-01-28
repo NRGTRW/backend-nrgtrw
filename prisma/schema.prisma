@@ -17,25 +17,25 @@ model User {
   profilePicture String?  @db.VarChar(512)
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
-  isVerified     Boolean  @default(false)  
-  otp            Int?    
-  otpExpiresAt   DateTime? 
+  isVerified     Boolean  @default(false)
+  otp            Int?
+  otpExpiresAt   DateTime?
   CartItem       CartItem[]
   Order          Order[]
   Wishlist       Wishlist[]
 }
 
 model Product {
-  id          Int         @id @default(autoincrement())
+  id          Int          @id @default(autoincrement())
   name        String
   price       Float
   description String
   imageUrl    String
-  createdAt   DateTime    @default(now())
+  createdAt   DateTime     @default(now())
   categoryId  Int?
   stock       Int
-  updatedAt   DateTime    @updatedAt
-  Category    Category?   @relation(fields: [categoryId], references: [id])
+  updatedAt   DateTime     @updatedAt
+  Category    Category?    @relation(fields: [categoryId], references: [id])
   colors      Color[]
   sizes       ProductSize[]
   wishlist    Wishlist[]
@@ -52,8 +52,8 @@ model Category {
 }
 
 model Size {
-  id     Int            @id @default(autoincrement())
-  size   String         @unique
+  id       Int           @id @default(autoincrement())
+  size     String        @unique
   products ProductSize[]
 }
 

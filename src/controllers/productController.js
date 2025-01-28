@@ -6,8 +6,17 @@ export const getAllProducts = async (req, res) => {
   try {
     console.log("Fetching products from the database...");
     const products = await prisma.product.findMany({
-      include: { sizes: true, colors: true },
+      // Include the join table "sizes" AND nest the actual "size" record
+      include: {
+        sizes: {
+          include: {
+            size: true, // <--- This is what ensures each size is returned
+          },
+        },
+        colors: true,
+      },
     });
+
     console.log("Products fetched:", products);
     res.status(200).json(products);
   } catch (error) {
@@ -16,16 +25,19 @@ export const getAllProducts = async (req, res) => {
   }
 };
 
-
 export const getProductById = async (req, res) => {
   const { id } = req.params;
   try {
     const product = await prisma.product.findUnique({
       where: { id: parseInt(id, 10) },
       include: {
-        sizes: true,
-        colors: true
-      }
+        sizes: {
+          include: {
+            size: true, // <--- Same here, to include nested size data
+          },
+        },
+        colors: true,
+      },
     });
 
     if (!product) {

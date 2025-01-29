@@ -211,7 +211,7 @@ const resetPassword = async (req, res) => {
                           <div style="display: inline-block; text-align: center;">
                             <a href="${resetLink}" target="_blank"
                                style="display: block; 
-                                      background-color: #007bff; 
+                                      background-color: #333333; 
                                       color: #ffffff !important; 
                                       text-decoration: none; 
                                       padding: 12px 18px; 

@@ -473,22 +473,23 @@ const seedUsers = async () => {
   }
 };
 
+
 // Seed products
 const seedProducts = async (products) => {
   try {
     for (const product of products) {
       console.log(`Processing product: ${product.name}`);
 
-      // Fetch global sizes
       const globalSizes = await prisma.size.findMany({
         where: { size: { in: product.sizes } },
       });
 
-      const colorsData = product.colors?.map((color) => ({
-        colorName: color.colorName || "Default Color",
-        imageUrl: isValidUrl(color.image) ? color.image : fallbackImage,
-        hoverImage: isValidUrl(color.hoverImage) ? color.hoverImage : fallbackImage,
-      })) || [];
+      const colorsData =
+        product.colors?.map((color) => ({
+          colorName: color.colorName || "Default Color",
+          imageUrl: isValidUrl(color.image) ? color.image : fallbackImage,
+          hoverImage: isValidUrl(color.hoverImage) ? color.hoverImage : fallbackImage,
+        })) || [];
 
       await prisma.product.create({
         data: {
@@ -514,12 +515,13 @@ const seedProducts = async (products) => {
 
       console.log(`Inserted product: ${product.name}`);
     }
-    console.log("Database seeded successfully!");
+    console.log("✅ Database seeded successfully!");
   } catch (error) {
     console.error("❌ Error while seeding database:", error.message);
     if (error.meta) console.error("Meta Information:", error.meta);
   }
 };
+
 
 // Seed database
 const main = async () => {

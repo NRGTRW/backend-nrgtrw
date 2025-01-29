@@ -3,11 +3,19 @@ import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import nodemailer from "nodemailer";
 
-
 const prisma = new PrismaClient();
 
-// Signup function
-export const signup = async (req, res) => {
+// Transporter for sending emails
+const transporter = nodemailer.createTransport({
+  service: "gmail",
+  auth: {
+    user: process.env.EMAIL_USER,
+    pass: process.env.EMAIL_PASSWORD,
+  },
+});
+
+// 📌 Signup Function
+ const signup = async (req, res) => {
   try {
     const { name, email, password } = req.body;
 
@@ -23,7 +31,6 @@ export const signup = async (req, res) => {
     const hashedPassword = await bcrypt.hash(password, 10);
     const otp = Math.floor(100000 + Math.random() * 900000); // Generate 6-digit OTP
 
-    // ✅ Remove `newUser` since we don't need it
     await prisma.user.create({
       data: {
         name,
@@ -35,7 +42,6 @@ export const signup = async (req, res) => {
       },
     });
 
-    // ✅ Send OTP email
     await transporter.sendMail({
       from: process.env.EMAIL_USER,
       to: email,
@@ -60,44 +66,8 @@ export const signup = async (req, res) => {
   }
 };
 
-
-// OTP Verification function
-export const verifyOTP = async (req, res) => {
-  try {
-    const { email, otp } = req.body;
-
-    if (!email || !otp) {
-      return res.status(400).json({ error: "Email and OTP are required." });
-    }
-
-    const user = await prisma.user.findUnique({ where: { email } });
-
-    if (!user || user.otp !== parseInt(otp) || user.otpExpiresAt < new Date()) {
-      return res.status(400).json({ error: "Invalid or expired OTP." });
-    }
-
-    // ✅ Mark the user as verified
-    await prisma.user.update({
-      where: { email },
-      data: { isVerified: true, otp: null, otpExpiresAt: null },
-    });
-
-    // ✅ Generate a new token
-    const token = jwt.sign({ id: user.id }, process.env.JWT_SECRET, {
-      expiresIn: "1h",
-    });
-
-    res.status(200).json({ message: "Account verified successfully.", token });
-  } catch (error) {
-    console.error("OTP verification error:", error.message);
-    res.status(500).json({ error: "Failed to verify OTP." });
-  }
-};
-
-
-
-// Login function
-export const login = async (req, res) => {
+// 📌 Login Function
+ const login = async (req, res) => {
   try {
     const { email, password } = req.body;
 
@@ -130,18 +100,8 @@ export const login = async (req, res) => {
   }
 };
 
-// Transporter for sending emails
-const transporter = nodemailer.createTransport({
-  service: "gmail",
-  auth: {
-    user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASSWORD,
-  },
-});
-
-
-// Password reset function
-export const resetPassword = async (req, res) => {
+// 📌 Password Reset Function (with pre-filled email and background image)
+const resetPassword = async (req, res) => {
   try {
     const { email } = req.body;
 
@@ -158,52 +118,92 @@ export const resetPassword = async (req, res) => {
       expiresIn: "15m",
     });
 
-    // ✅ Ensure CLIENT_URL is defined and formatted properly
     const clientUrls = process.env.CLIENT_URL ? process.env.CLIENT_URL.split(",") : [];
     if (clientUrls.length === 0) {
       console.error("CLIENT_URL is not defined in the .env file");
       return res.status(500).json({ error: "Server configuration error" });
     }
 
-    // ✅ Choose the correct URL based on the request origin
     const preferredUrl = req.headers.origin && clientUrls.includes(req.headers.origin)
       ? req.headers.origin
-      : clientUrls[0]; // Default to first URL if origin is unknown
+      : clientUrls[0];
 
-    const resetLink = `${preferredUrl}/reset-password/${resetToken}`;
+    const resetLink = `${preferredUrl}/reset-password/${resetToken}?email=${encodeURIComponent(user.email)}`;
+
     console.log("Generated Reset Link:", resetLink); // Debugging log
 
-    const mailOptions = {
+    await transporter.sendMail({
       from: process.env.EMAIL_USER,
       to: user.email,
       subject: "Password Reset Request",
       html: `
-        <div style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; padding: 20px; border: 1px solid #ddd; border-radius: 8px; max-width: 600px; margin: auto;">
-          <h2 style="color: #555; text-align: center;">Password Reset Request</h2>
-          <p>Hi <strong>${user.name || "there"}</strong>,</p>
-          <p>You recently requested to reset your password. Click the button below to reset it:</p>
-          <div style="text-align: center; margin: 20px 0;">
-            <a href="${resetLink}" target="_blank" style="display: inline-block; background-color: #007bff; color: #fff; text-decoration: none; padding: 12px 20px; border-radius: 5px; font-weight: bold;">Reset Password</a>
-          </div>
-          <p>If you did not request this, you can safely ignore this email.</p>
-          <p style="font-size: 12px; color: #999;">This link is valid for 15 minutes.</p>
-        </div>
+        <table role="presentation" style="width: 100%; text-align: center; padding: 20px; font-family: Arial, sans-serif;">
+          <tr>
+            <td align="center">
+              <!-- Business Card with Background Image -->
+              <table role="presentation" style="width: 100%; max-width: 360px; border-radius: 12px; overflow: hidden; box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.15);">
+                <tr>
+                  <td align="center" valign="middle" style="
+                    width: 100%;
+                    background: url('https://nrgtrw-images.s3.eu-central-1.amazonaws.com/images/HeroImage.webp') no-repeat center center;
+                    background-size: cover;
+                    text-align: center;
+                    color: white;
+                    position: relative;
+                    border-radius: 12px;
+                    padding: 0;
+                  ">
+                    <!-- Fallback for Outlook -->
+                    <table role="presentation" width="100%" height="100%" style="
+                      background: rgba(0, 0, 0, 0.55);
+                      border-radius: 12px;
+                      padding: 20px;
+                      text-align: center;
+                    ">
+                      <tr>
+                        <td align="center">
+                          <h3 style="margin: 10px 0; font-size: 18px; font-weight: bold;">Reset Your Password</h3>
+                          <p style="font-size: 14px; margin: 5px 0;"><strong>Hi ${user.name || "there"},</strong></p>
+                          <p style="font-size: 12px; margin-bottom: 12px;">Click below to reset your password.</p>
+                          <a href="${resetLink}" 
+                             style="display: inline-block; 
+                                    background-color: #333333; 
+                                    color: #fff; 
+                                    text-decoration: none; 
+                                    padding: 12px 18px; 
+                                    font-size: 14px; 
+                                    font-weight: bold; 
+                                    border-radius: 6px; 
+                                    margin-top: 10px;
+                                    width: auto; /* Ensures button scales properly */
+                                    min-width: 140px;">
+                            Reset Password
+                          </a>
+                        </td>
+                      </tr>
+                    </table>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+        </table>
       `,
-    };
+    });
+    
+    
 
-    await transporter.sendMail(mailOptions);
     res.status(200).json({ message: "Password reset email sent successfully" });
 
   } catch (error) {
     console.error("Password reset error:", error.message);
-    res.status(500).json({ error: "Failed to send password reset email" });
+    res.status(500).json({ error: "Failed to send password reset email." });
   }
 };
 
 
-
-// Update password function (for handling after user clicks the reset link)
-export const updatePassword = async (req, res) => {
+// 📌 Update Password Function
+ const updatePassword = async (req, res) => {
   try {
     const { resetToken, newPassword } = req.body;
 
@@ -226,3 +226,39 @@ export const updatePassword = async (req, res) => {
     res.status(500).json({ error: "Failed to update password." });
   }
 };
+
+// 📌 OTP Verification Function
+ const verifyOTP = async (req, res) => {
+  try {
+    const { email, otp } = req.body;
+
+    if (!email || !otp) {
+      return res.status(400).json({ error: "Email and OTP are required." });
+    }
+
+    const user = await prisma.user.findUnique({ where: { email } });
+
+    if (!user || user.otp !== parseInt(otp) || user.otpExpiresAt < new Date()) {
+      return res.status(400).json({ error: "Invalid or expired OTP." });
+    }
+
+    // ✅ Mark the user as verified
+    await prisma.user.update({
+      where: { email },
+      data: { isVerified: true, otp: null, otpExpiresAt: null },
+    });
+
+    // ✅ Generate a new token
+    const token = jwt.sign({ id: user.id }, process.env.JWT_SECRET, {
+      expiresIn: "1h",
+    });
+
+    res.status(200).json({ message: "Account verified successfully.", token });
+  } catch (error) {
+    console.error("OTP verification error:", error.message);
+    res.status(500).json({ error: "Failed to verify OTP." });
+  }
+};
+
+
+export { signup, login, resetPassword, updatePassword, verifyOTP };

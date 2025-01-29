@@ -10,12 +10,18 @@ const getWishlistByUser = async (userId) => {
 const addToWishlist = async (userId, item) => {
   return await prisma.wishlist.upsert({
     where: {
-      userId_productId: { userId, productId: item.productId }, // Unique constraint composite key
+      userId_productId_selectedSize_selectedColor: {
+        userId,
+        productId: item.productId,
+        selectedSize: item.selectedSize || null,
+        selectedColor: item.selectedColor || null,
+      },
     },
     create: { userId, ...item },
     update: { ...item },
   });
 };
+
 
 const moveToWishlist = async (userId, item) => {
   // First remove from cart
@@ -30,9 +36,9 @@ const removeFromWishlist = async (userId, { productId, selectedSize, selectedCol
   return await prisma.wishlist.deleteMany({
     where: {
       userId,
-      productId,
-      selectedSize,
-      selectedColor,
+      productId: parseInt(productId, 10),
+      selectedSize: selectedSize || null,
+      selectedColor: selectedColor || null,
     },
   });
 };

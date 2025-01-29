@@ -45,6 +45,15 @@ app.use(
   })
 );
 
+// Add DELETE body parsing middleware BEFORE express.json()
+app.use((req, res, next) => {
+  if (req.method === 'DELETE') {
+    express.json()(req, res, next);
+  } else {
+    next();
+  }
+});
+
 // Middleware
 app.use(helmet());
 app.use(express.json());

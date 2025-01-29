@@ -15,7 +15,7 @@ const transporter = nodemailer.createTransport({
 });
 
 // 📌 Signup Function
- const signup = async (req, res) => {
+const signup = async (req, res) => {
   try {
     const { name, email, password } = req.body;
 
@@ -47,15 +47,61 @@ const transporter = nodemailer.createTransport({
       to: email,
       subject: "Verify Your Account",
       html: `
-        <div style="font-family: Arial, sans-serif; text-align: center; padding: 20px;">
-          <h2 style="color: #333;">Verify Your Email</h2>
-          <p>Use the following OTP to verify your account:</p>
-          <div style="font-size: 24px; font-weight: bold; background: #f8f8f8; padding: 10px; display: inline-block;">
-            ${otp}
-          </div>
-          <p style="margin-top: 10px;">This code is valid for <strong>10 minutes</strong>.</p>
-          <p>If you did not request this, you can safely ignore this email.</p>
-        </div>
+        <table role="presentation" style="width: 100%; text-align: center; padding: 20px; font-family: Arial, sans-serif;">
+          <tr>
+            <td align="center">
+              <!-- Business Card with Background Image -->
+              <table role="presentation" style="width: 100%; max-width: 360px; border-radius: 12px; overflow: hidden; box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.15);">
+                <tr>
+                  <td align="center" valign="middle" style="
+                    width: 100%;
+                    background: url('https://nrgtrw-images.s3.eu-central-1.amazonaws.com/images/HeroImage.webp') no-repeat center center;
+                    background-size: cover;
+                    text-align: center;
+                    color: white;
+                    position: relative;
+                    border-radius: 12px;
+                    padding: 0;
+                  ">
+                    <!-- Overlay for Readability -->
+                    <table role="presentation" width="100%" height="100%" style="
+                      background: rgba(0, 0, 0, 0.55);
+                      border-radius: 12px;
+                      padding: 20px;
+                      text-align: center;
+                    ">
+                      <tr>
+                        <td align="center">
+                          <h3 style="margin: 10px 0; font-size: 18px; font-weight: bold;">Verify Your Email</h3>
+                          <p style="font-size: 14px; margin: 5px 0;"><strong>Hi ${name || "there"},</strong></p>
+                          <p style="font-size: 12px; margin-bottom: 12px;">Use the following OTP to verify your account:</p>
+                          
+                          <!-- ✅ OTP Styled Box -->
+                          <div style="
+                            display: inline-block;
+                            background: #ffffff;
+                            color: #333;
+                            font-size: 22px;
+                            font-weight: bold;
+                            padding: 10px 20px;
+                            border-radius: 8px;
+                            border: 2px solid #007bff;
+                            margin: 10px 0;
+                          ">
+                            ${otp}
+                          </div>
+
+                          <p style="font-size: 12px; margin-top: 10px;">This OTP is valid for <strong>10 minutes</strong>.</p>
+                          <p style="font-size: 12px; color: #cccccc;">If you did not request this, you can safely ignore this email.</p>
+                        </td>
+                      </tr>
+                    </table>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+        </table>
       `,
     });
 
@@ -65,6 +111,7 @@ const transporter = nodemailer.createTransport({
     res.status(500).json({ error: "Failed to create user." });
   }
 };
+
 
 // 📌 Login Function
  const login = async (req, res) => {
@@ -160,9 +207,8 @@ const resetPassword = async (req, res) => {
                           <p style="font-size: 14px; margin: 5px 0;"><strong>Hi ${user.name || "there"},</strong></p>
                           <p style="font-size: 12px; margin-bottom: 12px;">Click below to reset your password.</p>
                           
-                          <!-- ✅ Wrapper div (fix for Outlook/Gmail issues) -->
+                          <!-- ✅ Button for Reset -->
                           <div style="display: inline-block; text-align: center;">
-                            <!-- ✅ Fix: Button is now a block element -->
                             <a href="${resetLink}" target="_blank"
                                style="display: block; 
                                       background-color: #007bff; 
@@ -178,11 +224,6 @@ const resetPassword = async (req, res) => {
                               Reset Password
                             </a>
                           </div>
-
-                          <!-- ✅ Plaintext Link as Fallback (for clients that block buttons) -->
-                          <p style="font-size: 12px; margin-top: 12px;">
-                            If the button doesn’t work, <a href="${resetLink}" style="color: #007bff;">click here</a>.
-                          </p>
                         </td>
                       </tr>
                     </table>
@@ -194,7 +235,7 @@ const resetPassword = async (req, res) => {
         </table>
       `,
     });
-
+    
     res.status(200).json({ message: "Password reset email sent successfully" });
 
   } catch (error) {

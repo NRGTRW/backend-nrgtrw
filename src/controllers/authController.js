@@ -158,8 +158,10 @@ export const resetPassword = async (req, res) => {
       expiresIn: "15m",
     });
 
-    const resetLink = `${process.env.CLIENT_URL}/reset-password/${resetToken}`;
-
+    const clientUrls = process.env.CLIENT_URL.split(",");
+    const preferredUrl = clientUrls.includes(req.headers.origin) ? req.headers.origin : clientUrls[0];
+    const resetLink = `${preferredUrl}/reset-password/${resetToken}`;
+    console.log(resetLink);
     const mailOptions = {
       from: process.env.EMAIL_USER,
       to: user.email,

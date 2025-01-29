@@ -160,21 +160,24 @@ const resetPassword = async (req, res) => {
                           <p style="font-size: 14px; margin: 5px 0;"><strong>Hi ${user.name || "there"},</strong></p>
                           <p style="font-size: 12px; margin-bottom: 12px;">Click below to reset your password.</p>
                           
-                          <!-- ✅ Button with inline styles for email compatibility -->
-                          <a href="${resetLink}" target="_blank" 
-                             style="display: inline-block; 
-                                    background-color: #007bff; 
-                                    color: #ffffff !important; 
-                                    text-decoration: none; 
-                                    padding: 12px 18px; 
-                                    font-size: 14px; 
-                                    font-weight: bold; 
-                                    border-radius: 6px; 
-                                    margin-top: 10px;
-                                    border: none;
-                                    width: auto; min-width: 140px;">
-                            Reset Password
-                          </a>
+                          <!-- ✅ Wrapper div (fix for Outlook/Gmail issues) -->
+                          <div style="display: inline-block; text-align: center;">
+                            <!-- ✅ Fix: Button is now a block element -->
+                            <a href="${resetLink}" target="_blank"
+                               style="display: block; 
+                                      background-color: #007bff; 
+                                      color: #ffffff !important; 
+                                      text-decoration: none; 
+                                      padding: 12px 18px; 
+                                      font-size: 14px; 
+                                      font-weight: bold; 
+                                      border-radius: 6px; 
+                                      margin-top: 10px;
+                                      width: 180px; /* Forces button width */
+                                      text-align: center;">
+                              Reset Password
+                            </a>
+                          </div>
 
                           <!-- ✅ Plaintext Link as Fallback (for clients that block buttons) -->
                           <p style="font-size: 12px; margin-top: 12px;">

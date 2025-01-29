@@ -104,34 +104,28 @@ const transporter = nodemailer.createTransport({
 const resetPassword = async (req, res) => {
   try {
     const { email } = req.body;
-
-    if (!email) {
-      return res.status(400).json({ error: "Email is required" });
-    }
+    if (!email) return res.status(400).json({ error: "Email is required" });
 
     const user = await prisma.user.findUnique({ where: { email } });
-    if (!user) {
-      return res.status(404).json({ error: "User not found" });
-    }
+    if (!user) return res.status(404).json({ error: "User not found" });
 
     const resetToken = jwt.sign({ id: user.id }, process.env.JWT_SECRET, {
       expiresIn: "15m",
     });
 
+    // ✅ Ensure CLIENT_URL is properly set
     const clientUrls = process.env.CLIENT_URL ? process.env.CLIENT_URL.split(",") : [];
-    if (clientUrls.length === 0) {
-      console.error("CLIENT_URL is not defined in the .env file");
-      return res.status(500).json({ error: "Server configuration error" });
-    }
+    if (clientUrls.length === 0) return res.status(500).json({ error: "Server configuration error" });
 
     const preferredUrl = req.headers.origin && clientUrls.includes(req.headers.origin)
       ? req.headers.origin
       : clientUrls[0];
 
-    const resetLink = `${preferredUrl}/reset-password/${resetToken}?email=${encodeURIComponent(user.email)}`;
+    const resetLink = `${preferredUrl.replace(/\/$/, "")}/reset-password/${resetToken}?email=${encodeURIComponent(user.email)}`;
 
     console.log("Generated Reset Link:", resetLink); // Debugging log
 
+    // ✅ Send Reset Email
     await transporter.sendMail({
       from: process.env.EMAIL_USER,
       to: user.email,
@@ -153,7 +147,7 @@ const resetPassword = async (req, res) => {
                     border-radius: 12px;
                     padding: 0;
                   ">
-                    <!-- Fallback for Outlook -->
+                    <!-- Overlay for Readability -->
                     <table role="presentation" width="100%" height="100%" style="
                       background: rgba(0, 0, 0, 0.55);
                       border-radius: 12px;
@@ -165,20 +159,27 @@ const resetPassword = async (req, res) => {
                           <h3 style="margin: 10px 0; font-size: 18px; font-weight: bold;">Reset Your Password</h3>
                           <p style="font-size: 14px; margin: 5px 0;"><strong>Hi ${user.name || "there"},</strong></p>
                           <p style="font-size: 12px; margin-bottom: 12px;">Click below to reset your password.</p>
-                          <a href="${resetLink}" 
+                          
+                          <!-- ✅ Button with inline styles for email compatibility -->
+                          <a href="${resetLink}" target="_blank" 
                              style="display: inline-block; 
-                                    background-color: #333333; 
-                                    color: #fff; 
+                                    background-color: #007bff; 
+                                    color: #ffffff !important; 
                                     text-decoration: none; 
                                     padding: 12px 18px; 
                                     font-size: 14px; 
                                     font-weight: bold; 
                                     border-radius: 6px; 
                                     margin-top: 10px;
-                                    width: auto; /* Ensures button scales properly */
-                                    min-width: 140px;">
+                                    border: none;
+                                    width: auto; min-width: 140px;">
                             Reset Password
                           </a>
+
+                          <!-- ✅ Plaintext Link as Fallback (for clients that block buttons) -->
+                          <p style="font-size: 12px; margin-top: 12px;">
+                            If the button doesn’t work, <a href="${resetLink}" style="color: #007bff;">click here</a>.
+                          </p>
                         </td>
                       </tr>
                     </table>
@@ -190,8 +191,6 @@ const resetPassword = async (req, res) => {
         </table>
       `,
     });
-    
-    
 
     res.status(200).json({ message: "Password reset email sent successfully" });
 
@@ -200,7 +199,6 @@ const resetPassword = async (req, res) => {
     res.status(500).json({ error: "Failed to send password reset email." });
   }
 };
-
 
 // 📌 Update Password Function
  const updatePassword = async (req, res) => {

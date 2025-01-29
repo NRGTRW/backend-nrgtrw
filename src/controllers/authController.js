@@ -158,10 +158,21 @@ export const resetPassword = async (req, res) => {
       expiresIn: "15m",
     });
 
-    const clientUrls = process.env.CLIENT_URL.split(",");
-    const preferredUrl = clientUrls.includes(req.headers.origin) ? req.headers.origin : clientUrls[0];
+    // ✅ Ensure CLIENT_URL is defined and formatted properly
+    const clientUrls = process.env.CLIENT_URL ? process.env.CLIENT_URL.split(",") : [];
+    if (clientUrls.length === 0) {
+      console.error("CLIENT_URL is not defined in the .env file");
+      return res.status(500).json({ error: "Server configuration error" });
+    }
+
+    // ✅ Choose the correct URL based on the request origin
+    const preferredUrl = req.headers.origin && clientUrls.includes(req.headers.origin)
+      ? req.headers.origin
+      : clientUrls[0]; // Default to first URL if origin is unknown
+
     const resetLink = `${preferredUrl}/reset-password/${resetToken}`;
-    console.log(resetLink);
+    console.log("Generated Reset Link:", resetLink); // Debugging log
+
     const mailOptions = {
       from: process.env.EMAIL_USER,
       to: user.email,
@@ -172,27 +183,23 @@ export const resetPassword = async (req, res) => {
           <p>Hi <strong>${user.name || "there"}</strong>,</p>
           <p>You recently requested to reset your password. Click the button below to reset it:</p>
           <div style="text-align: center; margin: 20px 0;">
-            <a href="${resetLink}" style="display: inline-block; background-color: #007bff; color: #fff; text-decoration: none; padding: 12px 20px; border-radius: 5px; font-weight: bold;">Reset Password</a>
+            <a href="${resetLink}" target="_blank" style="display: inline-block; background-color: #007bff; color: #fff; text-decoration: none; padding: 12px 20px; border-radius: 5px; font-weight: bold;">Reset Password</a>
           </div>
           <p>If you did not request this, you can safely ignore this email.</p>
           <p style="font-size: 12px; color: #999;">This link is valid for 15 minutes.</p>
-          <hr style="border: none; border-top: 1px solid #eee;" />
-          <footer style="text-align: center; color: #888; font-size: 12px;">
-            <p>Need help? Contact our <a href="mailto:support@example.com" style="color: #007bff;">support team</a>.</p>
-            <p>&copy; ${new Date().getFullYear()} Your Company Name</p>
-          </footer>
         </div>
       `,
     };
-    
 
     await transporter.sendMail(mailOptions);
     res.status(200).json({ message: "Password reset email sent successfully" });
+
   } catch (error) {
     console.error("Password reset error:", error.message);
     res.status(500).json({ error: "Failed to send password reset email" });
   }
 };
+
 
 
 // Update password function (for handling after user clicks the reset link)

@@ -59,14 +59,9 @@ export const removeItemFromWishlist = async (req, res) => {
     }
 
     // Ensure we are deleting the correct item belonging to the user
-    const result = await prisma.wishlist.deleteMany({
-      where: {
-        id: Number(wishlistId),  // ✅ Ensure deletion is by wishlist ID, not productId
-        userId: Number(userId), // ✅ Ensure only the user who added it can remove it
-      },
-    });
+    const result = await wishlistService.removeFromWishlist(userId, wishlistId);
 
-    if (result.count > 0) {
+    if (result) {
       res.status(200).json({ message: "Item removed successfully." });
     } else {
       res.status(404).json({ message: "Item not found in wishlist." });

@@ -56,8 +56,8 @@ const removeFromWishlist = async (userId, wishlistId) => {
 
     const result = await prisma.wishlist.delete({
       where: {
-        id: Number(wishlistId), // ✅ Ensure we target the correct wishlist entry
-        userId: Number(userId), // ✅ Prevent deleting items from another user
+        id: Number(wishlistId), // Ensure it targets the correct wishlist entry
+        userId: Number(userId), // Prevent deleting items from another user
       },
     });
 

@@ -61,7 +61,7 @@ const removeFromWishlist = async (userId, wishlistId) => {
       },
     });
 
-    console.log("✅ Item removed from wishlist:", result);
+    console.log("✅ Item removed from your wishlist:", result);
     return result;
   } catch (error) {
     console.error("❌ Failed to remove from wishlist:", error);

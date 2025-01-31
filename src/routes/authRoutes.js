@@ -1,6 +1,6 @@
 import express from "express";
 import { signup, login } from "../controllers/authController.js";
-import authMiddleware from "../middlewares/authMiddleware.js";
+import { authMiddleware } from "../middlewares/authMiddleware.js";
 import { getProfile } from "../controllers/profileController.js";
 import { resetPassword, updatePassword, verifyOTP } from "../controllers/authController.js";
 

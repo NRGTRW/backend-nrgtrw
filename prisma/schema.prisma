@@ -93,15 +93,16 @@ model Wishlist {
 }
 
 model CartItem {
-  id        Int     @id @default(autoincrement())
-  userId    Int
-  productId Int
-  quantity  Int
-  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
-  user      User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id            Int     @id @default(autoincrement())
+  userId        Int
+  productId     Int
+  quantity      Int
+  selectedSize  String?  // Add this field
+  selectedColor String?  // Add this field
+  product       Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+  user          User    @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  @@index([productId], map: "CartItem_productId_fkey")
-  @@index([userId], map: "CartItem_userId_fkey")
+  @@unique([userId, productId, selectedSize, selectedColor]) // Add uniqueness constraint
 }
 
 model Order {

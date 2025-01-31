@@ -1,26 +1,51 @@
 import prisma from "../../prisma/lib/prisma.js";
 
 export const getCartByUser = async (userId) => {
-  return await prisma.cart.findMany({
-    where: { userId },
-    include: { product: true },
-  });
+  try {
+    return await prisma.cartItem.findMany({
+      where: { userId },
+      include: { 
+        product: {
+          include: {
+            colors: true,
+            sizes: { include: { size: true } }
+          }
+        }
+      },
+    });
+  } catch (error) {
+    console.error("[DB] Error fetching cart:", error);
+    throw new Error("Database error while fetching cart.");
+  }
 };
 
 export const addToCart = async (userId, item) => {
-  return await prisma.cart.upsert({
+  return await prisma.cartItem.upsert({
     where: {
-      userId_productId: { userId, productId: item.productId }, // Composite unique constraint
+      userId_productId_selectedSize_selectedColor: {
+        userId,
+        productId: item.productId,
+        selectedSize: item.selectedSize || null,
+        selectedColor: item.selectedColor || null,
+      },
     },
     create: { userId, ...item },
-    update: { ...item, quantity: item.quantity }, // Update if already exists
+    update: { quantity: item.quantity },
   });
 };
 
-export const removeFromCart = async (userId, productId) => {
-  return await prisma.cart.deleteMany({
-    where: { userId, productId },
-  });
+export const removeFromCart = async (userId, cartItemId) => {
+  try {
+    return await prisma.cartItem.delete({
+      where: {
+        id: cartItemId,    // ✅ Use cartItem ID (primary key)
+        userId: userId     // ✅ Ensure user owns this cart item
+      }
+    });
+  } catch (error) {
+    console.error("[DB] Delete error details:", error);
+    throw error; // Propagate error to controller
+  }
 };
 
 export const clearCart = async (userId) => {

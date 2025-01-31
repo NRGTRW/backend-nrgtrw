@@ -3,7 +3,7 @@ import { PrismaClient } from "@prisma/client";
 
 const prisma = new PrismaClient();
 
-export const authMiddleware = async (req, res, next) => {
+ const authMiddleware = async (req, res, next) => {
   try {
     const authHeader = req.headers.authorization;
 
@@ -32,18 +32,20 @@ export const authMiddleware = async (req, res, next) => {
 /**
  * ✅ Protect Middleware: Ensures User is Verified Before Proceeding
  */
-export const protect = async (req, res, next) => {
+ const protect = async (req, res, next) => {
   try {
-    await authMiddleware(req, res, async () => {
-      if (!req.user.isVerified) {
-        return res.status(403).json({ error: "Account not verified. Please complete OTP verification." });
-      }
-      next();
-    });
+    const token = req.headers.authorization?.split(" ")[1];
+    if (!token) throw new Error("No token provided");
+
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    const user = await prisma.user.findUnique({ where: { id: decoded.id } });
+    
+    if (!user) throw new Error("User not found");
+    req.user = user; // ✅ Attach user to request
+    next();
   } catch (error) {
-    console.error("🚨 Protect Middleware Error:", error.message);
-    return res.status(401).json({ error: "Unauthorized access." });
+    res.status(401).json({ message: "Not authorized" });
   }
 };
 
-export default authMiddleware;
+export { authMiddleware, protect };

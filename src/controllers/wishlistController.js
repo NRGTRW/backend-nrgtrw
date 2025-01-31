@@ -64,7 +64,7 @@ export const removeItemFromWishlist = async (req, res) => {
     if (result) {
       res.status(200).json({ message: "Item removed successfully." });
     } else {
-      res.status(404).json({ message: "Item not found in wishlist." });
+      res.status(404).json({ message: "Item not found in your wishlist." });
     }
   } catch (error) {
     console.error("🚨 Failed to remove item from wishlist:", error.message);

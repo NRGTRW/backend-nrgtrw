@@ -1,14 +1,157 @@
 import { PrismaClient } from "@prisma/client";
-import dotenv from "dotenv";
 import bcrypt from "bcrypt";
-import { encrypt } from '../src/utils/cryptoUtils.js';
+import { encrypt } from "../src/utils/cryptoUtils.js"; // Ensure you have this utility function
 
+const prisma = new PrismaClient();
+const fallbackImage = "https://example.com/fallback.jpg";
 
-dotenv.config();
+const isValidUrl = (url) => {
+  try {
+    new URL(url);
+    return true;
+  } catch {
+    return false;
+  }
+};
+
+// Global Sizes
+const globalSizes = ["S", "M", "L", "XL"];
+const seedSizes = async () => {
+  try {
+    for (const size of globalSizes) {
+      await prisma.size.upsert({
+        where: { size },
+        update: {},
+        create: { size },
+      });
+    }
+    console.log("✅ Seeded global sizes:", globalSizes);
+
+    // Log inserted sizes to check
+    const storedSizes = await prisma.size.findMany();
+    console.log("🛠️ Stored Sizes in DB:", storedSizes);
+  } catch (error) {
+    console.error("❌ Error seeding sizes:", error.message);
+  }
+};
+
+// Seed Users
+const seedUsers = async () => {
+  try {
+    const hashedPassword = await bcrypt.hash("Nikcho2006", 10);
+    const encryptedAddress = encrypt("Lyulin 8, bl.815, vh.A");
+    const encryptedPhone = encrypt("0897338635");
+
+    const user = await prisma.user.upsert({
+      where: { email: "nrgtrwsales@gmail.com" },
+      update: {},
+      create: {
+        email: "nrgtrwsales@gmail.com",
+        password: hashedPassword,
+        name: "Nikolay Goranov",
+        address: encryptedAddress,
+        phone: encryptedPhone,
+        isVerified: true,
+      },
+    });
+
+    console.log("✅ Seeded User:", user);
+  } catch (error) {
+    console.error("❌ Error seeding user:", error.message);
+  }
+};
+
+// Seed Products
+const seedProducts = async (products) => {
+  try {
+    for (const product of products) {
+      console.log(`Processing product: ${product.name}`);
+
+      // Find or create category
+      const category = await prisma.category.upsert({
+        where: { name: product.category },
+        update: {},
+        create: { name: product.category },
+      });
+
+      // Assign global sizes if product.sizes is missing
+      const productSizes = product.sizes?.length ? product.sizes : globalSizes;
+      console.log(`🛠️ Assigned sizes for ${product.name}:`, productSizes);
+
+      // Fetch existing sizes
+      const availableSizes = await prisma.size.findMany({
+        where: { size: { in: productSizes.map((s) => s.toString()) } },
+      });
+
+      console.log(`✅ Found ${availableSizes.length} sizes in DB for ${product.name}`);
+
+      if (availableSizes.length !== productSizes.length) {
+        console.error(
+          `❌ Size mismatch for ${product.name}! Expected ${productSizes.length}, found ${availableSizes.length}`
+        );
+      }
+
+      // Create product
+      const createdProduct = await prisma.product.create({
+        data: {
+          name: product.name,
+          price: product.price,
+          description: product.description,
+          imageUrl: isValidUrl(product.imageUrl) ? product.imageUrl : fallbackImage,
+          stock: product.stock,
+          categoryId: category.id,
+          colors: {
+            create: product.colors?.map((color) => ({
+              colorName: color.colorName || "Default Color",
+              imageUrl: isValidUrl(color.image) ? color.image : fallbackImage,
+              hoverImage: isValidUrl(color.hoverImage) ? color.hoverImage : fallbackImage,
+            })) || [],
+          },
+        },
+      });
+
+      // Create ProductSize records (fixes ProductSize relation issue)
+      await prisma.productSize.createMany({
+        data: availableSizes.map((size) => ({
+          productId: createdProduct.id,
+          sizeId: size.id,
+        })),
+        skipDuplicates: true, // Prevents duplicate errors
+      });
+
+      console.log(`✅ Inserted product: ${product.name}`);
+    }
+    console.log("✅ Database seeded successfully!");
+  } catch (error) {
+    console.error("❌ Error while seeding database:", error.message);
+    if (error.meta) console.error("Meta Information:", error.meta);
+  }
+};
+
+// Seed Database
+const main = async () => {
+  console.log("🌱 Seeding database...");
+  await seedSizes();
+  await seedUsers();
+
+  const products = [...eleganceProducts, ...pumpCoverProducts]; // Combine all product arrays
+  await seedProducts(products);
+
+  console.log("🌱 Seeding completed!");
+};
+
+// Run Seeder
+main()
+  .catch((error) => {
+    console.error("❌ Unexpected error during seeding:", error.message);
+    process.exit(1);
+  })
+  .finally(async () => {
+    await prisma.$disconnect();
+  });
 
 const BASE_URL =
   process.env.IMAGE_BASE_URL || "https://example.com/default-images";
-const prisma = new PrismaClient();
 
 
 const eleganceProducts = [
@@ -422,120 +565,3 @@ const pumpCoverProducts = [
 //       ]
 //     }
 //   ];
-const fallbackImage = "https://example.com/fallback.jpg";
-
-const isValidUrl = (url) => {
-  try {
-    new URL(url);
-    return true;
-  } catch {
-    return false;
-  }
-};
-
-const globalSizes = ["S", "M", "L", "XL"];
-const seedSizes = async () => {
-  try {
-    for (const size of globalSizes) {
-      await prisma.size.upsert({
-        where: { size },
-        update: {},
-        create: { size },
-      });
-    }
-    console.log("✅ Seeded global sizes:", globalSizes);
-  } catch (error) {
-    console.error("❌ Error seeding sizes:", error.message);
-  }
-};
-
-// Seed users
-const seedUsers = async () => {
-  try {
-    const hashedPassword = await bcrypt.hash("Nikcho2006", 10);
-    const encryptedAddress = encrypt("Lyulin 8, bl.815, vh.A");
-    const encryptedPhone = encrypt("0897338635");
-
-    const user = await prisma.user.create({
-      data: {
-        email: "nrgtrwsales@gmail.com",
-        password: hashedPassword,
-        name: "Nikolay Goranov",
-        address: encryptedAddress,
-        phone: encryptedPhone,
-        isVerified: true,
-      },
-    });
-
-    console.log("✅ Seeded User:", user);
-  } catch (error) {
-    console.error("❌ Error seeding user:", error.message);
-  }
-};
-
-
-// Seed products
-const seedProducts = async (products) => {
-  try {
-    for (const product of products) {
-      console.log(`Processing product: ${product.name}`);
-
-      const globalSizes = await prisma.size.findMany({
-        where: { size: { in: product.sizes } },
-      });
-
-      const colorsData =
-        product.colors?.map((color) => ({
-          colorName: color.colorName || "Default Color",
-          imageUrl: isValidUrl(color.image) ? color.image : fallbackImage,
-          hoverImage: isValidUrl(color.hoverImage) ? color.hoverImage : fallbackImage,
-        })) || [];
-
-      await prisma.product.create({
-        data: {
-          name: product.name,
-          price: product.price,
-          description: product.description,
-          imageUrl: isValidUrl(product.imageUrl) ? product.imageUrl : fallbackImage,
-          stock: product.stock,
-          Category: {
-            connectOrCreate: {
-              where: { name: product.category },
-              create: { name: product.category },
-            },
-          },
-          colors: { create: colorsData },
-          sizes: {
-            create: globalSizes.map((size) => ({
-              sizeId: size.id,
-            })),
-          },
-        },
-      });
-
-      console.log(`Inserted product: ${product.name}`);
-    }
-    console.log("✅ Database seeded successfully!");
-  } catch (error) {
-    console.error("❌ Error while seeding database:", error.message);
-    if (error.meta) console.error("Meta Information:", error.meta);
-  }
-};
-
-
-// Seed database
-const main = async () => {
-  console.log("🌱 Seeding database...");
-  await seedSizes();
-  await seedUsers();
-
-  const products = [...eleganceProducts, ...pumpCoverProducts]; // Combine all product arrays
-  await seedProducts(products);
-
-  console.log("🌱 Seeding completed!");
-};
-
-main().catch((error) => {
-  console.error("Unexpected error during seeding:", error.message);
-  process.exit(1);
-});

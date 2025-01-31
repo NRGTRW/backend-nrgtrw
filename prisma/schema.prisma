@@ -17,7 +17,7 @@ model User {
   profilePicture String?  @db.VarChar(512)
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
-  isVerified     Boolean  @default(false)
+  isVerified     Boolean  @default(false)  // ✅ Ensure it exists
   otp            Int?
   otpExpiresAt   DateTime?
   CartItem       CartItem[]
@@ -52,9 +52,9 @@ model Category {
 }
 
 model Size {
-  id       Int           @id @default(autoincrement())
-  size     String        @unique
-  products ProductSize[]
+  id           Int           @id @default(autoincrement())
+  size         String        @unique
+  productSizes ProductSize[] // ✅ Correctly referencing the join table
 }
 
 model ProductSize {
@@ -97,12 +97,12 @@ model CartItem {
   userId        Int
   productId     Int
   quantity      Int
-  selectedSize  String?  // Add this field
-  selectedColor String?  // Add this field
-  product       Product @relation(fields: [productId], references: [id], onDelete: Cascade)
-  user          User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  selectedSize  String?  // ✅ Ensuring selected size is optional
+  selectedColor String?  // ✅ Ensuring selected color is optional
+  product       Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  @@unique([userId, productId, selectedSize, selectedColor]) // Add uniqueness constraint
+  @@unique([userId, productId, selectedSize, selectedColor]) // ✅ Uniqueness constraint
 }
 
 model Order {

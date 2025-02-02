@@ -4,7 +4,9 @@ const getWishlistByUser = async (userId) => {
   return await prisma.wishlist.findMany({
     where: { userId },
     include: { 
-      product: true // ✅ Ensure product details are included
+      product: {
+        select: { name: true, price: true, imageUrl: true } // ✅ Ensure necessary product details are included
+      }
     },
   });
 };
@@ -18,7 +20,7 @@ const addToWishlist = async (userId, item) => {
         userId_productId_selectedSize_selectedColor: {
           userId,
           productId: item.productId,
-          selectedSize: item.selectedSize || "", // Use empty string instead of null
+          selectedSize: item.selectedSize || "", // ✅ Use empty string instead of null
           selectedColor: item.selectedColor || "",
         },
       },
@@ -39,15 +41,17 @@ const addToWishlist = async (userId, item) => {
   }
 };
 
-
-
 const moveToWishlist = async (userId, item) => {
-  // First remove from cart
-  await prisma.cart.deleteMany({
-    where: { userId, productId: item.productId },
-  });
-  // Then add to wishlist
-  return await addToWishlist(userId, item);
+  try {
+    await prisma.cartItem.deleteMany({
+      where: { userId, productId: item.productId },
+    });
+
+    return await addToWishlist(userId, item);
+  } catch (error) {
+    console.error("🚨 Move to Wishlist Error:", error);
+    throw new Error("Failed to move item to wishlist.");
+  }
 };
 
 const removeFromWishlist = async (userId, wishlistId) => {
@@ -56,12 +60,12 @@ const removeFromWishlist = async (userId, wishlistId) => {
 
     const result = await prisma.wishlist.delete({
       where: {
-        id: Number(wishlistId), // Ensure it targets the correct wishlist entry
-        userId: Number(userId), // Prevent deleting items from another user
+        id: Number(wishlistId), // ✅ Ensure correct ID targeting
+        userId: Number(userId), // ✅ Prevent unauthorized deletions
       },
     });
 
-    console.log("✅ Item removed from your wishlist:", result);
+    console.log("✅ Item removed from wishlist:", result);
     return result;
   } catch (error) {
     console.error("❌ Failed to remove from wishlist:", error);

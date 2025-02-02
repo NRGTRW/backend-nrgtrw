@@ -1,5 +1,5 @@
 import wishlistService from "../services/wishlistService.js";
-import prisma from "../../prisma/lib/prisma.js";
+
 export const getWishlist = async (req, res) => {
   try {
     const userId = req.user.id;
@@ -16,30 +16,21 @@ export const getWishlist = async (req, res) => {
 
 export const addItemToWishlist = async (req, res) => {
   try {
-    console.log("📩 Incoming Wishlist Request:", req.body);
-
     const userId = req.user.id;
     const { productId, selectedSize, selectedColor, quantity } = req.body;
 
-    // Validate required fields
     if (!productId || isNaN(Number(productId))) {
-      console.error("❌ Invalid Product ID:", productId);
       return res.status(400).json({ message: "Valid Product ID is required." });
     }
 
     const newItem = await wishlistService.addToWishlist(userId, {
-      productId: Number(productId), // ✅ Ensure correct type
+      productId: Number(productId),
       selectedSize: selectedSize || null,
       selectedColor: selectedColor || null,
       quantity: quantity || 1,
     });
 
-    console.log("✅ Wishlist Item Added:", newItem);
-
-    res.status(201).json({
-      message: "Item added to wishlist successfully.",
-      item: newItem,
-    });
+    res.status(201).json({ item: newItem });
   } catch (error) {
     console.error("🚨 Wishlist Error:", error);
     res.status(400).json({
@@ -51,14 +42,13 @@ export const addItemToWishlist = async (req, res) => {
 
 export const removeItemFromWishlist = async (req, res) => {
   try {
-    const userId = req.user.id; // Extract user ID from the authenticated user
-    const { wishlistId } = req.params; // Get wishlistId from URL params
+    const userId = req.user.id;
+    const { wishlistId } = req.params;
 
     if (!wishlistId) {
       return res.status(400).json({ message: "Wishlist ID is required for removal." });
     }
 
-    // Ensure we are deleting the correct item belonging to the user
     const result = await wishlistService.removeFromWishlist(userId, wishlistId);
 
     if (result) {
@@ -71,4 +61,3 @@ export const removeItemFromWishlist = async (req, res) => {
     res.status(500).json({ message: "Failed to remove item from wishlist." });
   }
 };
-

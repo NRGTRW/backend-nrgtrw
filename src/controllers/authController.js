@@ -74,7 +74,7 @@ const signup = async (req, res) => {
                         <td align="center">
                           <h3 style="margin: 10px 0; font-size: 18px; font-weight: bold;">Verify Your Email</h3>
                           <p style="font-size: 14px; margin: 5px 0;"><strong>Hi ${name || "there"},</strong></p>
-                          <p style="font-size: 12px; margin-bottom: 12px;">Use the following OTP to verify your account:</p>
+                          <p style="font-size: 12px; margin-bottom: 12px;">Use the following Verification code to verify your account:</p>
                           
                           <!-- ✅ OTP Styled Box -->
                           <div style="
@@ -91,7 +91,7 @@ const signup = async (req, res) => {
                             ${otp}
                           </div>
 
-                          <p style="font-size: 12px; margin-top: 10px;">This OTP is valid for <strong>10 minutes</strong>.</p>
+                          <p style="font-size: 12px; margin-top: 10px;">This Verification code is valid for <strong>10 minutes</strong>.</p>
                           <p style="font-size: 12px; color: #cccccc;">If you did not request this, you can safely ignore this email.</p>
                         </td>
                       </tr>

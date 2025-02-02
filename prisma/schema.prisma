@@ -17,13 +17,14 @@ model User {
   profilePicture String?  @db.VarChar(512)
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
-  isVerified     Boolean  @default(false)  // ✅ Ensure it exists
+  isVerified     Boolean  @default(false) // ✅ Ensure this field exists
   otp            Int?
   otpExpiresAt   DateTime?
   CartItem       CartItem[]
   Order          Order[]
   Wishlist       Wishlist[]
 }
+
 
 model Product {
   id          Int          @id @default(autoincrement())
@@ -52,9 +53,9 @@ model Category {
 }
 
 model Size {
-  id           Int           @id @default(autoincrement())
-  size         String        @unique
-  productSizes ProductSize[] // ✅ Correctly referencing the join table
+  id   Int    @id @default(autoincrement())
+  size String @unique
+  products ProductSize[] // ✅ Ensure this relation exists
 }
 
 model ProductSize {
@@ -64,9 +65,9 @@ model ProductSize {
   product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
   size      Size     @relation(fields: [sizeId], references: [id], onDelete: Cascade)
 
-  @@index([productId], map: "ProductSize_productId_fkey")
-  @@index([sizeId], map: "ProductSize_sizeId_fkey")
+  @@unique([productId, sizeId])
 }
+
 
 model Color {
   id         Int     @id @default(autoincrement())
@@ -97,12 +98,12 @@ model CartItem {
   userId        Int
   productId     Int
   quantity      Int
-  selectedSize  String?  // ✅ Ensuring selected size is optional
-  selectedColor String?  // ✅ Ensuring selected color is optional
-  product       Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
-  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  selectedSize  String?
+  selectedColor String?
+  product       Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+  user          User    @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  @@unique([userId, productId, selectedSize, selectedColor]) // ✅ Uniqueness constraint
+  @@unique([userId, productId, selectedSize, selectedColor])
 }
 
 model Order {

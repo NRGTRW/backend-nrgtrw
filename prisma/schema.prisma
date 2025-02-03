@@ -12,12 +12,13 @@ model User {
   email          String   @unique
   password       String
   name           String
+  role           String   @default("user") // ✅ Role field (user, admin, root_admin)
   address        String?
   phone          String?
   profilePicture String?  @db.VarChar(512)
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
-  isVerified     Boolean  @default(false) // ✅ Ensure this field exists
+  isVerified     Boolean  @default(false)
   otp            Int?
   otpExpiresAt   DateTime?
   CartItem       CartItem[]
@@ -34,7 +35,7 @@ model Product {
   imageUrl    String
   createdAt   DateTime     @default(now())
   categoryId  Int?
-  stock       Int
+  stock       Int          @default(0)
   updatedAt   DateTime     @updatedAt
   Category    Category?    @relation(fields: [categoryId], references: [id])
   colors      Color[]
@@ -73,7 +74,7 @@ model Color {
   id         Int     @id @default(autoincrement())
   colorName  String
   imageUrl   String
-  hoverImage String
+  hoverImage String?
   productId  Int
   product    Product @relation(fields: [productId], references: [id], onDelete: Cascade)
 
@@ -86,9 +87,8 @@ model Wishlist {
   productId     Int
   selectedSize  String?
   selectedColor String?
-  quantity      Int     @default(1)
-  user          User    @relation(fields: [userId], references: [id])
-  product       Product @relation(fields: [productId], references: [id])
+  user          User     @relation(fields: [userId], references: [id])
+  product       Product  @relation(fields: [productId], references: [id])
 
   @@unique([userId, productId, selectedSize, selectedColor])
 }

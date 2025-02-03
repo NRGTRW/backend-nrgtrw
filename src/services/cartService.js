@@ -32,31 +32,63 @@ export const getCartByUser = async (userId) => {
  */
 export const addToCart = async (userId, item) => {
   try {
+    const parsedUserId = parseInt(userId, 10);
+    const parsedProductId = parseInt(item.productId, 10);
+
+    if (isNaN(parsedUserId) || isNaN(parsedProductId)) {
+      console.error("❌ Invalid userId or productId:", { userId: parsedUserId, productId: parsedProductId });
+      throw new Error("Invalid userId or productId.");
+    }
+
+    console.log("🛒 Checking if product exists in database before adding to cart...");
+
+    const productExists = await prisma.product.findUnique({
+      where: { id: parsedProductId },
+      select: { name: true, price: true, id: true },
+    });
+
+    if (!productExists) {
+      console.error(`❌ Product with ID ${parsedProductId} does not exist.`);
+      throw new Error(`Product with ID ${parsedProductId} does not exist.`);
+    }
+
+    console.log(`✅ Product ${parsedProductId} found:`, productExists);
+
+    console.log("🛍️ Adding product to cart:", {
+      userId: parsedUserId,
+      productId: parsedProductId,
+      selectedSize: item.selectedSize || null,
+      selectedColor: item.selectedColor || null,
+      quantity: item.quantity || 1,
+    });
+
     return await prisma.cartItem.upsert({
       where: {
         userId_productId_selectedSize_selectedColor: {
-          userId,
-          productId: item.productId,
+          userId: parsedUserId,
+          productId: parsedProductId,
           selectedSize: item.selectedSize || null,
           selectedColor: item.selectedColor || null,
         },
       },
       create: {
-        userId,
-        productId: item.productId,
+        userId: parsedUserId,
+        productId: parsedProductId,
         selectedSize: item.selectedSize || null,
         selectedColor: item.selectedColor || null,
-        quantity: item.quantity,
+        quantity: item.quantity || 1,
       },
       update: {
         quantity: item.quantity,
       },
     });
   } catch (error) {
-    console.error("[DB] Error adding item to cart:", error);
+    console.error("❌ [DB] Error adding item to cart:", error);
     throw new Error("Database error while adding item to cart.");
   }
 };
+
+
 
 /**
  * Removes a specific cart item, ensuring it's owned by the given user.

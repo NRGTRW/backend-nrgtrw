@@ -1,6 +1,6 @@
 import { PrismaClient } from "@prisma/client";
 import bcrypt from "bcrypt";
-import { encrypt } from "../src/utils/cryptoUtils.js"; // Ensure you have this utility function
+import { encrypt } from "../src/utils/cryptoUtils.js";
 
 const prisma = new PrismaClient();
 const fallbackImage = "https://example.com/fallback.jpg";
@@ -35,7 +35,7 @@ const seedSizes = async () => {
   }
 };
 
-// Seed Users
+
 const seedUsers = async () => {
   try {
     const hashedPassword = await bcrypt.hash("Nikcho2006", 10);
@@ -44,20 +44,25 @@ const seedUsers = async () => {
 
     const user = await prisma.user.upsert({
       where: { email: "nrgtrwsales@gmail.com" },
-      update: {},
+      update: { 
+        role: "root_admin", // ✅ Explicitly setting root_admin if already exists
+      },
       create: {
         email: "nrgtrwsales@gmail.com",
         password: hashedPassword,
         name: "Nikolay Goranov",
+        role: "root_admin", // ✅ Ensure role is set during creation
         address: encryptedAddress,
         phone: encryptedPhone,
         isVerified: true,
       },
     });
 
-    console.log("✅ Seeded User:", user);
+    console.log("✅ Seeded/Updated User:", user);
   } catch (error) {
     console.error("❌ Error seeding user:", error.message);
+  } finally {
+    await prisma.$disconnect();
   }
 };
 

@@ -11,6 +11,9 @@ import profileRoutes from "./routes/profileRoutes.js";
 import productRoutes from "./routes/productRoutes.js";
 import cartRoutes from "./routes/cartRoutes.js";
 import wishlistRoutes from "./routes/wishlistRoutes.js";
+import adminRoutes from "./routes/adminRoutes.js";
+import uploadRoutes from "./routes/uploadRoutes.js";
+import userRoutes from './routes/userRoutes.js';
 import { PrismaClient } from "@prisma/client";
 
 dotenv.config();
@@ -40,7 +43,7 @@ app.use(
       }
     },
     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-    allowedHeaders: ["Content-Type", "Authorization", "x-access-token"],
+    allowedHeaders: ["Content-Type", "Authorization", "x-access-token", "Cache-Control" ],
     credentials: true,
   })
 );
@@ -63,6 +66,9 @@ app.use(
     max: 1000, // Limit each IP to 1000 requests per windowMs
   })
 );
+app.use(express.json()); // Parses JSON payloads
+app.use(express.urlencoded({ extended: true })); // Parses URL-encoded payloads
+
 
 // Static File Serving for Uploaded Files
 app.use(
@@ -108,6 +114,11 @@ app.use("/api", profileRoutes);
 app.use("/api/products", productRoutes);
 app.use("/api/cart", cartRoutes);
 app.use("/api/wishlist", wishlistRoutes);
+app.use("/api/admin", adminRoutes);
+app.use("/api/upload", uploadRoutes);
+app.use('/api', userRoutes);
+
+
 
 // Test Database Route
 app.get("/api/test-db", async (req, res) => {

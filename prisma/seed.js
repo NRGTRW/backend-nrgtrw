@@ -1,4 +1,4 @@
-import { PrismaClient } from "@prisma/client";
+import { PrismaClient, Role } from "@prisma/client";
 import bcrypt from "bcrypt";
 import { encrypt } from "../src/utils/cryptoUtils.js";
 
@@ -27,14 +27,12 @@ const seedSizes = async () => {
     }
     console.log("✅ Seeded global sizes:", globalSizes);
 
-    // Log inserted sizes to check
     const storedSizes = await prisma.size.findMany();
     console.log("🛠️ Stored Sizes in DB:", storedSizes);
   } catch (error) {
     console.error("❌ Error seeding sizes:", error.message);
   }
 };
-
 
 const seedUsers = async () => {
   try {
@@ -44,26 +42,25 @@ const seedUsers = async () => {
 
     const user = await prisma.user.upsert({
       where: { email: "nrgtrwsales@gmail.com" },
-      update: {updatedAt: new Date(),
-        role: "root_admin", // ✅ Explicitly setting root_admin if already exists
+      update: {
+        updatedAt: new Date(),
+        role: Role.ROOT_ADMIN, // Explicitly using Prisma Enum
       },
       create: {
         email: "nrgtrwsales@gmail.com",
         password: hashedPassword,
         name: "Nikolay Goranov",
-        role: "root_admin", // ✅ Ensure role is set during creation
+        role: Role.ROOT_ADMIN,
         address: encryptedAddress,
         phone: encryptedPhone,
         isVerified: true,
-        updatedAt: new Date(), //
+        updatedAt: new Date(),
       },
     });
 
     console.log("✅ Seeded/Updated User:", user);
   } catch (error) {
     console.error("❌ Error seeding user:", error.message);
-  } finally {
-    await prisma.$disconnect();
   }
 };
 
@@ -91,12 +88,6 @@ const seedProducts = async (products) => {
 
       console.log(`✅ Found ${availableSizes.length} sizes in DB for ${product.name}`);
 
-      if (availableSizes.length !== productSizes.length) {
-        console.error(
-          `❌ Size mismatch for ${product.name}! Expected ${productSizes.length}, found ${availableSizes.length}`
-        );
-      }
-
       // Create product
       const createdProduct = await prisma.product.create({
         data: {
@@ -105,7 +96,7 @@ const seedProducts = async (products) => {
           description: product.description,
           imageUrl: isValidUrl(product.imageUrl) ? product.imageUrl : fallbackImage,
           stock: product.stock,
-          categoryId: category.id,
+          category: { connect: { id: category.id } },
           colors: {
             create: product.colors?.map((color) => ({
               colorName: color.colorName || "Default Color",
@@ -117,13 +108,13 @@ const seedProducts = async (products) => {
         },
       });
 
-      // Create ProductSize records (fixes ProductSize relation issue)
-      await prisma.productsize.createMany({
+      // Create ProductSize records
+      await prisma.productSize.createMany({
         data: availableSizes.map((size) => ({
           productId: createdProduct.id,
           sizeId: size.id,
         })),
-        skipDuplicates: true, // Prevents duplicate errors
+        skipDuplicates: true,
       });
 
       console.log(`✅ Inserted product: ${product.name}`);
@@ -156,6 +147,7 @@ main()
   .finally(async () => {
     await prisma.$disconnect();
   });
+
 
 const BASE_URL =
   process.env.IMAGE_BASE_URL || "https://example.com/default-images";

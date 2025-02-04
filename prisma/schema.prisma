@@ -7,24 +7,30 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+enum Role {
+  USER
+  ADMIN
+  ROOT_ADMIN
+}
+
 model User {
   id             Int      @id @default(autoincrement())
   email          String   @unique
   password       String
   name           String
+  role           Role     @default(USER)
   address        String?
   phone          String?
   profilePicture String?  @db.VarChar(512)
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
-  isVerified     Boolean  @default(false) // ✅ Ensure this field exists
+  isVerified     Boolean  @default(false)
   otp            Int?
   otpExpiresAt   DateTime?
-  CartItem       CartItem[]
-  Order          Order[]
-  Wishlist       Wishlist[]
+  cartItems      CartItem[]
+  orders         Order[]
+  wishlist       Wishlist[]
 }
-
 
 model Product {
   id          Int          @id @default(autoincrement())
@@ -33,10 +39,10 @@ model Product {
   description String
   imageUrl    String
   createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
   categoryId  Int?
   stock       Int
-  updatedAt   DateTime     @updatedAt
-  Category    Category?    @relation(fields: [categoryId], references: [id])
+  category    Category?    @relation(fields: [categoryId], references: [id])
   colors      Color[]
   sizes       ProductSize[]
   wishlist    Wishlist[]
@@ -55,22 +61,16 @@ model Category {
 model Size {
   id   Int    @id @default(autoincrement())
   size String @unique
-  products ProductSize[] // ✅ Ensure this relation exists
+  products ProductSize[]
 }
 
-model category {
-  id      Int       @id @default(autoincrement())
-  name    String    @unique(map: "Category_name_key")
-  product product[]
-}
-
-model color {
+model Color {
   id         Int     @id @default(autoincrement())
   colorName  String
   imageUrl   String
   hoverImage String?
   productId  Int
-  product    product @relation(fields: [productId], references: [id], onDelete: Cascade, map: "Color_productId_fkey")
+  product    Product @relation(fields: [productId], references: [id], onDelete: Cascade, map: "Color_productId_fkey")
 
   @@index([productId], map: "Color_productId_fkey")
 }
@@ -106,91 +106,32 @@ model Order {
   userId    Int
   createdAt DateTime    @default(now())
   updatedAt DateTime    @updatedAt
-  user      user        @relation(fields: [userId], references: [id], onDelete: Cascade, map: "Order_userId_fkey")
-  orderitem orderitem[]
+  user      User        @relation(fields: [userId], references: [id], onDelete: Cascade, map: "Order_userId_fkey")
+  orderItems OrderItem[]
 
   @@index([userId], map: "Order_userId_fkey")
 }
 
-model orderitem {
+model OrderItem {
   id        Int     @id @default(autoincrement())
   orderId   Int
   productId Int
   quantity  Int
-  order     order   @relation(fields: [orderId], references: [id], onDelete: Cascade, map: "OrderItem_orderId_fkey")
-  product   product @relation(fields: [productId], references: [id], onDelete: Cascade, map: "OrderItem_productId_fkey")
+  order     Order   @relation(fields: [orderId], references: [id], onDelete: Cascade, map: "OrderItem_orderId_fkey")
+  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade, map: "OrderItem_productId_fkey")
 
   @@index([orderId], map: "OrderItem_orderId_fkey")
   @@index([productId], map: "OrderItem_productId_fkey")
 }
 
-model product {
-  id          Int           @id @default(autoincrement())
-  name        String
-  price       Float
-  description String
-  categoryId  Int?
-  imageUrl    String
-  stock       Int
-  createdAt   DateTime      @default(now())
-  updatedAt   DateTime
-  cartitem    cartItem[]
-  colors      color[]
-  orderitem   orderitem[]
-  category    category?     @relation(fields: [categoryId], references: [id], map: "Product_categoryId_fkey")
-  productsize productsize[]
-  wishlist    wishlist[]
-
-  @@index([categoryId], map: "Product_categoryId_fkey")
-}
-
-model productsize {
+model ProductSize {
   id        Int     @id @default(autoincrement())
   productId Int
   sizeId    Int
-  product   product @relation(fields: [productId], references: [id], onDelete: Cascade, map: "ProductSize_productId_fkey")
-  size      size    @relation(fields: [sizeId], references: [id], onDelete: Cascade, map: "ProductSize_sizeId_fkey")
+  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade, map: "ProductSize_productId_fkey")
+  size      Size    @relation(fields: [sizeId], references: [id], onDelete: Cascade, map: "ProductSize_sizeId_fkey")
 
   @@unique([productId, sizeId], map: "ProductSize_productId_sizeId_key")
   @@index([productId], map: "ProductSize_productId_fkey")
   @@index([sizeId], map: "ProductSize_sizeId_fkey")
-}
-
-model size {
-  id          Int           @id @default(autoincrement())
-  size        String        @unique(map: "Size_size_key")
-  productsize productsize[]
-}
-
-model user {
-  id             Int        @id @default(autoincrement())
-  name           String
-  email          String     @unique(map: "User_email_key")
-  password       String
-  profilePicture String?    @db.VarChar(512)
-  address        String?
-  createdAt      DateTime   @default(now())
-  updatedAt      DateTime
-  phone          String?
-  isVerified     Boolean    @default(false)
-  otp            Int?
-  otpExpiresAt   DateTime?
-  cartitem       cartItem[]
-  order          order[]
-  wishlist       wishlist[]
-}
-
-model wishlist {
-  id            Int     @id @default(autoincrement())
-  userId        Int
-  productId     Int
-  selectedSize  String?
-  selectedColor String?
-  quantity      Int     @default(1)
-  product       product @relation(fields: [productId], references: [id], map: "Wishlist_productId_fkey")
-  user          user    @relation(fields: [userId], references: [id], map: "Wishlist_userId_fkey")
-
-  @@unique([userId, productId, selectedSize, selectedColor], map: "Wishlist_userId_productId_selectedSize_selectedColor_key")
-  @@index([productId], map: "Wishlist_productId_fkey")
-  @@index([userId], map: "Wishlist_userId_fkey")
 }

@@ -16,8 +16,12 @@ export const getCartByUser = async (userId) => {
             price: true,
             imageUrl: true,
             colors: true,
-            productsize: { include: { size: true } }, // ✅ Corrected relation
-          },
+            sizes: {  // ✅ Use "sizes" (Correct relation)
+              include: {
+                size: true,  // Include the related size model
+              }
+            }
+                      },
         },
       },
     });

@@ -104,17 +104,13 @@ const seedProducts = async (products) => {
               hoverImage: isValidUrl(color.hoverImage) ? color.hoverImage : fallbackImage,
             })) || [],
           },
+          sizes: {  // ✅ Corrected: Use "sizes" instead of "productsize"
+            create: availableSizes.map((size) => ({
+              size: { connect: { id: size.id } }
+            }))
+          },
           updatedAt: new Date(),
         },
-      });
-
-      // Create ProductSize records
-      await prisma.productSize.createMany({
-        data: availableSizes.map((size) => ({
-          productId: createdProduct.id,
-          sizeId: size.id,
-        })),
-        skipDuplicates: true,
       });
 
       console.log(`✅ Inserted product: ${product.name}`);
@@ -147,7 +143,6 @@ main()
   .finally(async () => {
     await prisma.$disconnect();
   });
-
 
 const BASE_URL =
   process.env.IMAGE_BASE_URL || "https://example.com/default-images";

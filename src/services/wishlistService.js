@@ -12,11 +12,14 @@ export const getWishlistByUser = async (userId) => {
             price: true,
             imageUrl: true,
             colors: true,
-            productsize: { include: { size: true } },
-          },
-        },
-      },
+            sizes: {  
+              include: { size: true }
+            }
+          }
+        }
+      }
     });
+    
 
     console.log("🔍 Wishlist from DB:", wishlist);
     return wishlist;

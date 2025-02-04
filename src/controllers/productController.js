@@ -44,9 +44,12 @@ export const getAllProducts = async (req, res) => {
     console.log("Fetching products from the database...");
     const products = await prisma.product.findMany({
       include: {
-        productsize: { include: { size: true } },
+        sizes: {  // ✅ Corrected: "sizes" exists in your Prisma schema
+          include: { size: true }
+        },
         colors: true,
-      },
+        category: true,  // ✅ If category is needed
+      }
     });
     console.log("✅ Products fetched:", products);
     res.status(200).json(products);
@@ -66,17 +69,21 @@ export const getProductById = async (req, res) => {
     const product = await prisma.product.findUnique({
       where: { id: parseInt(id, 10) },
       include: {
-        productsize: { include: { size: true } },
+        sizes: {  // ✅ Use "sizes" (Correct relation)
+          include: { size: true }
+        },
         colors: true,
-      },
+        category: true,  // ✅ Include category if needed
+      }
     });
     if (!product) {
       return res.status(404).json({ error: "Product not found" });
     }
     const formattedProduct = {
       ...product,
-      sizes: product.productsize.map((ps) => ps.size),
+      sizes: product.sizes.map((ps) => ps.size),  
     };
+    
     return res.status(200).json(formattedProduct);
   } catch (error) {
     console.error(`Error fetching product with ID ${id}:`, error.message);

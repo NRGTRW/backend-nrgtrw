@@ -1,5 +1,5 @@
-// cartService.js
-import prisma from "../../prisma/lib/prisma.js";
+import { PrismaClient } from "@prisma/client";  // ✅ Ensure Prisma is imported
+const prisma = new PrismaClient();  // ✅ Ensure a new instance is created
 
 /**
  * Fetches all cart items for a specific user,
@@ -16,7 +16,7 @@ export const getCartByUser = async (userId) => {
             price: true,
             imageUrl: true,
             colors: true,
-            sizes: { select: { size: true } }
+            productsize: { include: { size: true } }, // ✅ Corrected relation
           },
         },
       },
@@ -27,36 +27,58 @@ export const getCartByUser = async (userId) => {
   }
 };
 
-/**
- * Adds or updates a cart item (upsert) for a given user & product combination.
- */
+
 export const addToCart = async (userId, item) => {
   try {
-    return await prisma.cartItem.upsert({
+    console.log("📥 Attempting to add to cart:", item);
+
+    if (!prisma.cartItem) {
+      throw new Error("Prisma cartItem model is undefined. Check your Prisma schema.");
+    }
+
+    // Find if the item already exists in the cart (same product, size, and color)
+    const existingItem = await prisma.cartItem.findFirst({
       where: {
-        userId_productId_selectedSize_selectedColor: {
-          userId,
-          productId: item.productId,
-          selectedSize: item.selectedSize || null,
-          selectedColor: item.selectedColor || null,
-        },
+        userId,
+        productId: item.productId,
+        selectedSize: item.selectedSize || null,
+        selectedColor: item.selectedColor || null,
       },
-      create: {
+    });
+
+    // If it exists, update the quantity instead of creating a new entry
+    if (existingItem) {
+      const newQuantity = Math.min(existingItem.quantity + item.quantity, 99); // ✅ Max quantity of 99
+
+      const updatedCartItem = await prisma.cartItem.update({
+        where: { id: existingItem.id },
+        data: { quantity: newQuantity },
+      });
+
+      console.log("✅ Updated cart item quantity:", updatedCartItem);
+      return updatedCartItem;
+    }
+
+    // If it doesn't exist, create a new cart entry
+    const newCartItem = await prisma.cartItem.create({
+      data: {
         userId,
         productId: item.productId,
         selectedSize: item.selectedSize || null,
         selectedColor: item.selectedColor || null,
         quantity: item.quantity,
       },
-      update: {
-        quantity: item.quantity,
-      },
     });
+
+    console.log("✅ Successfully added new item to cart:", newCartItem);
+    return newCartItem;
   } catch (error) {
-    console.error("[DB] Error adding item to cart:", error);
-    throw new Error("Database error while adding item to cart.");
+    console.error("❌ Prisma Error while adding to cart:", error);
+    throw new Error(`Database error while adding item to cart: ${error.message}`);
   }
 };
+
+
 
 /**
  * Removes a specific cart item, ensuring it's owned by the given user.

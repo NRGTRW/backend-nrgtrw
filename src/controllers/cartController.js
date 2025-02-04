@@ -11,17 +11,23 @@ export const getCart = async (req, res) => {
     const cart = await cartService.getCartByUser(userId);
 
     // Flatten fields so the frontend can directly use them.
-    const formattedCart = cart.map((item) => ({
-      cartItemId: item.id,
-      productId: item.productId,
-      selectedSize: item.selectedSize,
-      selectedColor: item.selectedColor,
-      quantity: item.quantity,
-      // Flatten product data:
-      name: item.product?.name || "Unknown Product",
-      price: item.product?.price ?? 0,
-      imageUrl: item.product?.imageUrl || "/default-image.png",
-    }));
+    const formattedCart = cart.map((item) => {
+      if (!item.product) {
+        console.warn(`⚠️ Warning: Product ID ${item.productId} not found.`);
+        return null;
+      }
+    
+      return {
+        cartItemId: item.id,
+        productId: item.productId,
+        selectedSize: item.selectedSize,
+        selectedColor: item.selectedColor,
+        quantity: item.quantity,
+        name: item.product.name,
+        price: item.product.price,
+        imageUrl: item.product.imageUrl,
+      };
+    }).filter(Boolean);
 
     res.status(200).json(formattedCart);
   } catch (error) {
@@ -37,33 +43,32 @@ export const getCart = async (req, res) => {
 export const addToCart = async (req, res) => {
   console.log("📥 Incoming Add to Cart Request:", req.body);
 
-  // 1. Extract userId from the JWT (req.user.id), not from the request body
   const userId = req.user?.id;
-
   const { productId, name, price, selectedSize, selectedColor, quantity } = req.body;
 
-  // 2. Validate required fields (excluding userId, because we decode it from token)
+  // Validate required fields
   if (!productId || !name || !price || !quantity) {
     console.error("❌ Missing fields:", { productId, name, price, quantity });
     return res.status(400).json({ message: "Missing required fields." });
   }
 
   try {
-    // Use the service to upsert the cart item
     const newCartItem = await cartService.addToCart(userId, {
       productId,
       name,
       price,
-      selectedSize,
-      selectedColor,
+      selectedSize: selectedSize || null,
+      selectedColor: selectedColor || null,
       quantity,
     });
+
     return res.status(201).json(newCartItem);
   } catch (error) {
-    console.error("❌ Error adding to cart:", error);
-    return res.status(500).json({ message: "Internal Server Error." });
+    console.error("❌ Error adding to cart:", error.message);
+    return res.status(500).json({ message: "Internal Server Error.", details: error.message });
   }
 };
+
 
 /**
  * Controller: DELETE /api/cart/:cartItemId

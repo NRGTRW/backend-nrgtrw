@@ -1,26 +1,67 @@
 import wishlistService from "../services/wishlistService.js";
+import { PrismaClient } from "@prisma/client";
+const prisma = new PrismaClient();
 
 export const getWishlist = async (req, res) => {
   try {
-    const userId = req.user.id;
-    const wishlist = await wishlistService.getWishlistByUser(userId);
-    res.status(200).json(wishlist);
-  } catch (error) {
-    console.error("Failed to load wishlist:", error.message);
-    res.status(500).json({ 
-      error: "Internal server error", 
-      message: "Failed to load wishlist. Please try again later." 
+    const userId = req.user?.id;
+    const wishlistItems = await prisma.wishlist.findMany({
+      where: { userId },
+      include: {
+        product: {
+          select: {
+            name: true,
+            price: true,
+            imageUrl: true,
+            colors: true,
+            productsize: { include: { size: true } },
+          },
+        },
+      },
     });
+
+    const formattedWishlist = wishlistItems.map((item) => ({
+      id: item.id,
+      productId: item.productId,
+      selectedSize: item.selectedSize,
+      selectedColor: item.selectedColor, // ✅ Ensure this is used
+      quantity: item.quantity,
+      product: {
+        name: item.product?.name,
+        price: item.product?.price,
+        imageUrl: item.product?.imageUrl,
+        colors: item.product?.colors, // ✅ Include all colors
+      },
+    }));
+
+    console.log("✅ Wishlist Data Sent to Frontend:", formattedWishlist);
+    res.status(200).json(formattedWishlist);
+  } catch (error) {
+    console.error("❌ Error fetching wishlist:", error);
+    res.status(500).json({ message: "Failed to fetch wishlist." });
   }
 };
 
+
+
+
+
 export const addItemToWishlist = async (req, res) => {
   try {
-    const userId = req.user.id;
+    console.log("📩 Incoming Wishlist Request:", req.body);
+    console.log("🔑 User ID from Auth Middleware:", req.user?.id);
+
+    const userId = req.user?.id;
     const { productId, selectedSize, selectedColor, quantity } = req.body;
 
     if (!productId || isNaN(Number(productId))) {
-      return res.status(400).json({ message: "Valid Product ID is required." });
+      console.error("❌ Invalid Product ID:", productId);
+      return res.status(400).json({ error: "Valid Product ID is required." });
+    }
+
+    if (!userId) {
+      console.error("❌ User ID not found in request.");
+      return res.status(400).json({ error: "Invalid user ID." });
     }
 
     const newItem = await wishlistService.addToWishlist(userId, {
@@ -30,6 +71,7 @@ export const addItemToWishlist = async (req, res) => {
       quantity: quantity || 1,
     });
 
+    console.log("✅ Item added to Wishlist:", newItem);
     res.status(201).json({ item: newItem });
   } catch (error) {
     console.error("🚨 Wishlist Error:", error);
@@ -39,6 +81,7 @@ export const addItemToWishlist = async (req, res) => {
     });
   }
 };
+
 
 export const removeItemFromWishlist = async (req, res) => {
   try {

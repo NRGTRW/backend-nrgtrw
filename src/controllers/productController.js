@@ -6,16 +6,12 @@ export const getAllProducts = async (req, res) => {
   try {
     console.log("Fetching products from the database...");
     const products = await prisma.product.findMany({
-      // Include the join table "sizes" AND nest the actual "size" record
       include: {
-        sizes: {
-          include: {
-            size: true, // <--- This is what ensures each size is returned
-          },
-        },
-        colors: true,
+        productsize: { include: { size: true } }, // ✅ Correct relation name
+        colors: true, // ✅ Ensure this matches the schema
       },
     });
+    
 
     console.log("Products fetched:", products);
     res.status(200).json(products);
@@ -31,22 +27,27 @@ export const getProductById = async (req, res) => {
     const product = await prisma.product.findUnique({
       where: { id: parseInt(id, 10) },
       include: {
-        sizes: {
-          include: {
-            size: true, // <--- Same here, to include nested size data
-          },
-        },
+        productsize: { include: { size: true } },
         colors: true,
       },
     });
 
     if (!product) {
-      return res.status(404).json({ error: "Product not found" });
+      return res.status(404).json({ error: "Product not found" }); // ✅ Return prevents further execution
     }
 
-    res.status(200).json(product);
+    // ✅ Transform sizes so frontend gets a clean response
+    const formattedProduct = {
+      ...product,
+      sizes: product.productsize.map((ps) => ps.size), // Extract sizes directly
+    };
+
+    return res.status(200).json(formattedProduct); // ✅ Always return here
   } catch (error) {
     console.error(`Error fetching product with ID ${id}:`, error.message);
-    res.status(500).json({ error: "Failed to fetch product." });
+    if (!res.headersSent) { // ✅ Prevents sending multiple responses
+      return res.status(500).json({ error: "Failed to fetch product." });
+    }
   }
 };
+

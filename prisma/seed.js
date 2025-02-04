@@ -44,7 +44,7 @@ const seedUsers = async () => {
 
     const user = await prisma.user.upsert({
       where: { email: "nrgtrwsales@gmail.com" },
-      update: {},
+      update: {updatedAt: new Date() },
       create: {
         email: "nrgtrwsales@gmail.com",
         password: hashedPassword,
@@ -52,6 +52,7 @@ const seedUsers = async () => {
         address: encryptedAddress,
         phone: encryptedPhone,
         isVerified: true,
+        updatedAt: new Date(), //
       },
     });
 
@@ -107,11 +108,12 @@ const seedProducts = async (products) => {
               hoverImage: isValidUrl(color.hoverImage) ? color.hoverImage : fallbackImage,
             })) || [],
           },
+          updatedAt: new Date(),
         },
       });
 
       // Create ProductSize records (fixes ProductSize relation issue)
-      await prisma.productSize.createMany({
+      await prisma.productsize.createMany({
         data: availableSizes.map((size) => ({
           productId: createdProduct.id,
           sizeId: size.id,

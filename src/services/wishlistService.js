@@ -1,15 +1,33 @@
 import prisma from "../../prisma/lib/prisma.js";
 
-const getWishlistByUser = async (userId) => {
-  return await prisma.wishlist.findMany({
-    where: { userId },
-    include: { 
-      product: {
-        select: { name: true, price: true, imageUrl: true } // ✅ Ensure necessary product details are included
-      }
-    },
-  });
+
+export const getWishlistByUser = async (userId) => {
+  try {
+    const wishlist = await prisma.wishlist.findMany({
+      where: { userId },
+      include: {
+        product: {
+          select: {
+            name: true,
+            price: true,
+            imageUrl: true,
+            colors: true,
+            productsize: { include: { size: true } }, 
+          },
+        },
+      },
+    });
+
+    console.log("🔍 Wishlist from DB:", wishlist);
+    return wishlist;
+  } catch (error) {
+    console.error("[DB] Error fetching wishlist:", error);
+    throw new Error("Database error while fetching wishlist.");
+  }
 };
+
+
+
 
 const addToWishlist = async (userId, item) => {
   try {
@@ -20,7 +38,7 @@ const addToWishlist = async (userId, item) => {
         userId_productId_selectedSize_selectedColor: {
           userId,
           productId: item.productId,
-          selectedSize: item.selectedSize || "", // ✅ Use empty string instead of null
+          selectedSize: item.selectedSize || "", // ✅ Ensure empty string instead of null
           selectedColor: item.selectedColor || "",
         },
       },
@@ -29,10 +47,10 @@ const addToWishlist = async (userId, item) => {
         productId: item.productId,
         selectedSize: item.selectedSize || "",
         selectedColor: item.selectedColor || "",
-        quantity: item.quantity,
+        quantity: item.quantity || 1, // Ensure quantity is included
       },
       update: {
-        quantity: item.quantity,
+        quantity: item.quantity || 1,
       },
     });
   } catch (error) {

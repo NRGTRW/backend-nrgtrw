@@ -66,7 +66,7 @@ export const addToCart = async (userId, item) => {
         productId: item.productId,
         selectedSize: item.selectedSize || null,
         selectedColor: item.selectedColor || null,
-        quantity: item.quantity,
+        quantity: item.quantity || 1,
       },
     });
 

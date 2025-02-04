@@ -7,19 +7,55 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-model cartItem {
-  id            Int     @id @default(autoincrement())
-  userId        Int
-  productId     Int
-  quantity      Int
-  selectedColor String?
-  selectedSize  String?
-  product       product @relation(fields: [productId], references: [id], onDelete: Cascade, map: "CartItem_productId_fkey")
-  user          user    @relation(fields: [userId], references: [id], onDelete: Cascade, map: "CartItem_userId_fkey")
+model User {
+  id             Int      @id @default(autoincrement())
+  email          String   @unique
+  password       String
+  name           String
+  address        String?
+  phone          String?
+  profilePicture String?  @db.VarChar(512)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  isVerified     Boolean  @default(false) // ✅ Ensure this field exists
+  otp            Int?
+  otpExpiresAt   DateTime?
+  CartItem       CartItem[]
+  Order          Order[]
+  Wishlist       Wishlist[]
+}
 
-  @@unique([userId, productId, selectedSize, selectedColor], map: "CartItem_userId_productId_selectedSize_selectedColor_key")
-  @@index([productId], map: "CartItem_productId_fkey")
-  @@index([userId], map: "CartItem_userId_fkey")
+
+model Product {
+  id          Int          @id @default(autoincrement())
+  name        String
+  price       Float
+  description String
+  imageUrl    String
+  createdAt   DateTime     @default(now())
+  categoryId  Int?
+  stock       Int
+  updatedAt   DateTime     @updatedAt
+  Category    Category?    @relation(fields: [categoryId], references: [id])
+  colors      Color[]
+  sizes       ProductSize[]
+  wishlist    Wishlist[]
+  cartItems   CartItem[]
+  orderItems  OrderItem[]
+
+  @@index([categoryId], map: "Product_categoryId_fkey")
+}
+
+model Category {
+  id       Int       @id @default(autoincrement())
+  name     String    @unique
+  products Product[]
+}
+
+model Size {
+  id   Int    @id @default(autoincrement())
+  size String @unique
+  products ProductSize[] // ✅ Ensure this relation exists
 }
 
 model category {
@@ -32,14 +68,40 @@ model color {
   id         Int     @id @default(autoincrement())
   colorName  String
   imageUrl   String
-  hoverImage String
+  hoverImage String?
   productId  Int
   product    product @relation(fields: [productId], references: [id], onDelete: Cascade, map: "Color_productId_fkey")
 
   @@index([productId], map: "Color_productId_fkey")
 }
 
-model order {
+model Wishlist {
+  id            Int     @id @default(autoincrement())
+  userId        Int
+  productId     Int
+  selectedSize  String?
+  selectedColor String?
+  quantity      Int     @default(1)
+  user          User    @relation(fields: [userId], references: [id])
+  product       Product @relation(fields: [productId], references: [id])
+
+  @@unique([userId, productId, selectedSize, selectedColor])
+}
+
+model CartItem {
+  id            Int     @id @default(autoincrement())
+  userId        Int
+  productId     Int
+  quantity      Int
+  selectedSize  String?
+  selectedColor String?
+  product       Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+  user          User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, productId, selectedSize, selectedColor])
+}
+
+model Order {
   id        Int         @id @default(autoincrement())
   userId    Int
   createdAt DateTime    @default(now())

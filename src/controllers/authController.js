@@ -1,11 +1,9 @@
 import { PrismaClient } from "@prisma/client";
-import bcrypt from "bcrypt";
-import jwt from "jsonwebtoken";
-import nodemailer from "nodemailer";
+import bcrypt from 'bcrypt';
+import jwt from 'jsonwebtoken';
+import nodemailer from 'nodemailer';
 
 const prisma = new PrismaClient();
-
-// Transporter for sending emails
 const transporter = nodemailer.createTransport({
   service: "gmail",
   auth: {
@@ -14,34 +12,37 @@ const transporter = nodemailer.createTransport({
   },
 });
 
-// 📌 Signup Function
-const signup = async (req, res) => {
+ const signup = async (req, res) => {
   try {
     const { name, email, password } = req.body;
-
+    
+    // Validation checks
     if (!name || !email || !password) {
-      return res.status(400).json({ error: "All fields are required." });
+      return res.status(400).json({ error: "All fields are required" });
     }
 
     const existingUser = await prisma.user.findUnique({ where: { email } });
     if (existingUser) {
-      return res.status(400).json({ error: "User already exists." });
+      return res.status(409).json({ error: "User already exists" });
     }
 
+    // Create user with role
     const hashedPassword = await bcrypt.hash(password, 10);
-    const otp = Math.floor(100000 + Math.random() * 900000); // Generate 6-digit OTP
+    const otp = Math.floor(100000 + Math.random() * 900000);
 
-    await prisma.user.create({
+    const user = await prisma.user.create({
       data: {
         name,
         email,
         password: hashedPassword,
+        role: "user", // Default role
         isVerified: false,
         otp,
-        otpExpiresAt: new Date(Date.now() + 10 * 60 * 1000), // OTP valid for 10 minutes
+        otpExpiresAt: new Date(Date.now() + 600000)
       },
     });
 
+    // Send verification email
     await transporter.sendMail({
       from: process.env.EMAIL_USER,
       to: email,
@@ -105,45 +106,76 @@ const signup = async (req, res) => {
       `,
     });
 
-    res.status(201).json({ message: "Signup successful! Please verify your email with the OTP sent." });
+    res.status(201).json({ 
+      message: "Verification email sent",
+      userId: user.id 
+    });
+    
   } catch (error) {
-    console.error("Signup error:", error.message);
-    res.status(500).json({ error: "Failed to create user." });
+    console.error("Signup error:", error);
+    res.status(500).json({ error: "Internal server error" });
   }
 };
 
-
-// 📌 Login Function
  const login = async (req, res) => {
   try {
     const { email, password } = req.body;
 
+    // Validate input
     if (!email || !password) {
-      return res.status(400).json({ error: "Email and password are required" });
+      return res.status(400).json({ error: "Invalid credentials" });
     }
 
-    const user = await prisma.user.findUnique({ where: { email } });
+    // Find user with role
+    const user = await prisma.user.findUnique({
+      where: { email },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        password: true,
+        role: true,
+        isVerified: true
+      }
+    });
+
     if (!user) {
-      return res.status(404).json({ error: "User not found" });
-    }
-
-    const isPasswordValid = await bcrypt.compare(password, user.password);
-    if (!isPasswordValid) {
       return res.status(401).json({ error: "Invalid credentials" });
     }
 
-    const token = jwt.sign({ id: user.id }, process.env.JWT_SECRET, {
-      expiresIn: "1h",
+    // Check verification status
+    if (!user.isVerified) {
+      return res.status(403).json({ error: "Account not verified" });
+    }
+
+    // Validate password
+    const validPassword = await bcrypt.compare(password, user.password);
+    if (!validPassword) {
+      return res.status(401).json({ error: "Invalid credentials" });
+    }
+
+    // Generate JWT
+    const token = jwt.sign(
+      { id: user.id, role: user.role },
+      process.env.JWT_SECRET,
+      { expiresIn: "24h" }
+    );
+
+    // Return user data with role
+    res.json({
+      message: "Login successful",
+      token,
+      user: {
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        role: user.role
+      }
     });
 
-    res.status(200).json({
-      message: "Login successful",
-      user: { id: user.id, name: user.name, email: user.email },
-      token,
-    });
   } catch (error) {
-    console.error("Login error:", error.message);
-    res.status(500).json({ error: error.message || "Failed to log in" });
+    console.error("Login error:", error);
+    res.status(500).json({ error: "Internal server error" });
   }
 };
 

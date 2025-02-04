@@ -1,10 +1,11 @@
 import { PrismaClient } from "@prisma/client";
+import { uploadProfilePicture } from "../utils/uploadConfig.js";
 
 const prisma = new PrismaClient();
 
 export const getAllProducts = async (req, res) => {
   try {
-    console.log("Fetching products from the database...");
+    console.log("Fetching products from the database..."); 
     const products = await prisma.product.findMany({
       include: {
         productsize: { include: { size: true } }, // ✅ Correct relation name
@@ -13,10 +14,10 @@ export const getAllProducts = async (req, res) => {
     });
     
 
-    console.log("Products fetched:", products);
+    console.log("✅ Products fetched:", products);
     res.status(200).json(products);
   } catch (error) {
-    console.error("Error fetching products:", error.message);
+    console.error("❌ Error fetching products:", error.message);
     res.status(500).json({ error: "Failed to fetch products" });
   }
 };

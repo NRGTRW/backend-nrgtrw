@@ -1,10 +1,7 @@
 // cartController.js
 import cartService from "../services/cartService.js";
+import prisma from "../../prisma/lib/prisma.js";
 
-/**
- * Controller: GET /api/cart
- * Returns a flattened array of cart items.
- */
 export const getCart = async (req, res) => {
   try {
     const userId = req.user.id; // Set by your auth middleware
@@ -36,22 +33,21 @@ export const getCart = async (req, res) => {
   }
 };
 
-/**
- * Controller: POST /api/cart
- * Adds or updates an item in the user's cart.
- */
+
 export const addToCart = async (req, res) => {
   console.log("📥 Incoming Add to Cart Request:", req.body);
 
   const userId = req.user?.id;
   const { productId, name, price, selectedSize, selectedColor, quantity } = req.body;
 
-  // Validate required fields
+  // 1️⃣ Validate Required Fields
   if (!productId || !name || !price || !quantity) {
     console.error("❌ Missing fields:", { productId, name, price, quantity });
     return res.status(400).json({ message: "Missing required fields." });
   }
 
+  // 2️⃣ Check if Product Exists
+  console.log("🛒 Checking if product exists in DB...");
   try {
     const newCartItem = await cartService.addToCart(userId, {
       productId,
@@ -69,11 +65,6 @@ export const addToCart = async (req, res) => {
   }
 };
 
-
-/**
- * Controller: DELETE /api/cart/:cartItemId
- * Removes a single cart item from the user's cart.
- */
 export const removeFromCart = async (req, res) => {
   try {
     const userId = req.user.id;
@@ -88,7 +79,6 @@ export const removeFromCart = async (req, res) => {
   } catch (error) {
     console.error("[CART] Delete error:", error);
 
-    // Prisma error code P2025 means "Record not found"
     if (error.code === "P2025") {
       return res.status(404).json({ message: "Cart item not found" });
     }

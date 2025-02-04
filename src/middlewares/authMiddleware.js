@@ -16,46 +16,28 @@ export const authMiddleware = (roles = []) => {
       if (!authHeader?.startsWith("Bearer ")) {
         return res.status(401).json({ error: "Unauthorized. No token provided." });
       }
-
       const token = authHeader.split(" ")[1];
       const decoded = jwt.verify(token, process.env.JWT_SECRET);
-
       // Fetch fresh user data
       const user = await prisma.user.findUnique({
         where: { id: decoded.id },
-        select: { 
-          id: true, 
-          email: true, 
-          name: true, 
-          role: true, 
-          profilePicture: true 
-        },
+        select: { id: true, email: true, name: true, role: true, profilePicture: true },
       });
-
       if (!user) {
         return res.status(401).json({ error: "User not found." });
       }
-
-      // Role validation (if required)
       if (roles.length > 0 && !roles.includes(user.role)) {
-        return res.status(403).json({ 
-          error: `Forbidden. Required roles: [${roles.join(', ')}]` 
-        });
+        return res.status(403).json({ error: `Forbidden. Required roles: [${roles.join(', ')}]` });
       }
-
       req.user = user;
       next();
     } catch (error) {
       console.error("🔴 Middleware Error:", error);
-
-      if (error instanceof PrismaClientKnownRequestError) {
-        return res.status(503).json({ error: "Database error" });
-      }
-
       return res.status(500).json({ error: "Internal server error" });
     }
   };
 };
+
 
 /**
  * ✅ Protect Middleware

@@ -109,7 +109,7 @@ app.get("/api/db-health", async (req, res) => {
 
 // API Routes
 app.use("/api/auth", authRoutes);
-app.use("/api", profileRoutes);
+app.use("/api/profile", profileRoutes);
 app.use("/api/products", productRoutes);
 app.use("/api/cart", cartRoutes);
 app.use("/api/wishlist", wishlistRoutes);

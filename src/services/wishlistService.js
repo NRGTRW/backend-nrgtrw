@@ -1,6 +1,6 @@
 import prisma from "../../prisma/lib/prisma.js";
 
-
+// Fetch the wishlist for a given user (including product details)
 export const getWishlistByUser = async (userId) => {
   try {
     const wishlist = await prisma.wishlist.findMany({
@@ -12,7 +12,7 @@ export const getWishlistByUser = async (userId) => {
             price: true,
             imageUrl: true,
             colors: true,
-            productsize: { include: { size: true } }, 
+            productsize: { include: { size: true } },
           },
         },
       },
@@ -26,10 +26,7 @@ export const getWishlistByUser = async (userId) => {
   }
 };
 
-
-
-
-const addToWishlist = async (userId, item) => {
+export const addToWishlist = async (userId, item) => {
   try {
     console.log("📩 Adding to Wishlist:", item);
 
@@ -38,7 +35,7 @@ const addToWishlist = async (userId, item) => {
         userId_productId_selectedSize_selectedColor: {
           userId,
           productId: item.productId,
-          selectedSize: item.selectedSize || "", // ✅ Ensure empty string instead of null
+          selectedSize: item.selectedSize || "",
           selectedColor: item.selectedColor || "",
         },
       },
@@ -47,7 +44,7 @@ const addToWishlist = async (userId, item) => {
         productId: item.productId,
         selectedSize: item.selectedSize || "",
         selectedColor: item.selectedColor || "",
-        quantity: item.quantity || 1, // Ensure quantity is included
+        quantity: item.quantity || 1,
       },
       update: {
         quantity: item.quantity || 1,
@@ -59,7 +56,8 @@ const addToWishlist = async (userId, item) => {
   }
 };
 
-const moveToWishlist = async (userId, item) => {
+// (Optional) If you need to move items from the cart to the wishlist:
+export const moveToWishlist = async (userId, item) => {
   try {
     await prisma.cartItem.deleteMany({
       where: { userId, productId: item.productId },
@@ -72,16 +70,21 @@ const moveToWishlist = async (userId, item) => {
   }
 };
 
-const removeFromWishlist = async (userId, wishlistId) => {
+export const removeFromWishlist = async (userId, wishlistId) => {
   try {
     console.log("🛠️ Removing Wishlist Item:", { userId, wishlistId });
 
-    const result = await prisma.wishlist.delete({
+    // Using deleteMany ensures that we check both id and userId.
+    const result = await prisma.wishlist.deleteMany({
       where: {
-        id: Number(wishlistId), // ✅ Ensure correct ID targeting
-        userId: Number(userId), // ✅ Prevent unauthorized deletions
+        id: Number(wishlistId),
+        userId: Number(userId),
       },
     });
+
+    if (result.count === 0) {
+      throw new Error("Wishlist item not found or unauthorized deletion.");
+    }
 
     console.log("✅ Item removed from wishlist:", result);
     return result;

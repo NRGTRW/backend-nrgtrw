@@ -44,13 +44,16 @@ const handleMulterErrors = (error, req, res, next) => {
 // Get Profile Handler
 export const getProfile = async (req, res) => {
   try {
-    const user = req.user;
+    // Instead of relying on req.user from the token, query the database.
+    const userId = req.user.id;
+    const user = await prisma.user.findUnique({ where: { id: userId } });
     if (!user) return res.status(404).json({ error: "User not found" });
 
     res.status(200).json({
       id: user.id,
       name: user.name,
       email: user.email,
+      // Decrypt the fields if they exist
       address: user.address ? decrypt(user.address) : null,
       phone: user.phone ? decrypt(user.phone) : null,
       profilePicture: user.profilePicture || null,
@@ -60,6 +63,8 @@ export const getProfile = async (req, res) => {
     res.status(500).json({ error: "Failed to load profile" });
   }
 };
+
+
 
 // Update Profile Handler
 export const updateProfile = async (req, res) => {
@@ -103,18 +108,19 @@ export const uploadProfilePicture = async (req, res) => {
     };
 
     await s3.send(new PutObjectCommand(uploadParams));
-    
     const publicUrl = `https://${uploadParams.Bucket}.s3.${process.env.AWS_REGION}.amazonaws.com/${fileKey}`;
-    
+
+    console.log("Profile picture uploaded successfully:", publicUrl);
     res.json({ previewPath: publicUrl });
   } catch (error) {
-    console.error('Upload Error:', error);
+    console.error("Upload Error:", error);
     res.status(500).json({ 
       error: 'Upload failed',
       details: error.message
     });
   }
 };
+
 
 // Save Profile Picture Handler
 export const saveProfilePicture = async (req, res) => {

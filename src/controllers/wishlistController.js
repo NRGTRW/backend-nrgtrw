@@ -1,36 +1,23 @@
 import wishlistService from "../services/wishlistService.js";
-import { PrismaClient } from "@prisma/client";
-const prisma = new PrismaClient();
 
 export const getWishlist = async (req, res) => {
   try {
     const userId = req.user?.id;
-    const wishlistItems = await prisma.wishlist.findMany({
-      where: { userId },
-      include: {
-        product: {
-          select: {
-            name: true,
-            price: true,
-            imageUrl: true,
-            colors: true,
-            productsize: { include: { size: true } },
-          },
-        },
-      },
-    });
+    // Fetch wishlist via the service layer
+    const wishlistItems = await wishlistService.getWishlistByUser(userId);
 
+    // Format the wishlist items as needed by the frontend
     const formattedWishlist = wishlistItems.map((item) => ({
       id: item.id,
       productId: item.productId,
       selectedSize: item.selectedSize,
-      selectedColor: item.selectedColor, // ✅ Ensure this is used
+      selectedColor: item.selectedColor,
       quantity: item.quantity,
       product: {
         name: item.product?.name,
         price: item.product?.price,
         imageUrl: item.product?.imageUrl,
-        colors: item.product?.colors, // ✅ Include all colors
+        colors: item.product?.colors,
       },
     }));
 
@@ -41,10 +28,6 @@ export const getWishlist = async (req, res) => {
     res.status(500).json({ message: "Failed to fetch wishlist." });
   }
 };
-
-
-
-
 
 export const addItemToWishlist = async (req, res) => {
   try {
@@ -82,7 +65,6 @@ export const addItemToWishlist = async (req, res) => {
   }
 };
 
-
 export const removeItemFromWishlist = async (req, res) => {
   try {
     const userId = req.user.id;
@@ -92,9 +74,10 @@ export const removeItemFromWishlist = async (req, res) => {
       return res.status(400).json({ message: "Wishlist ID is required for removal." });
     }
 
+    // The service returns an object with a "count" property from deleteMany
     const result = await wishlistService.removeFromWishlist(userId, wishlistId);
 
-    if (result) {
+    if (result.count && result.count > 0) {
       res.status(200).json({ message: "Item removed successfully." });
     } else {
       res.status(404).json({ message: "Item not found in your wishlist." });

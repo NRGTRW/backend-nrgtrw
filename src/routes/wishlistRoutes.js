@@ -8,8 +8,9 @@ import { authMiddleware } from "../middlewares/authMiddleware.js";
 
 const router = express.Router();
 
-router.get("/", authMiddleware, getWishlist);
-router.post("/", authMiddleware, addItemToWishlist);
-router.delete('/:wishlistId', authMiddleware, removeItemFromWishlist);
+// Note: Call authMiddleware() to get the middleware function
+router.get("/", authMiddleware(), getWishlist);
+router.post("/", authMiddleware(), addItemToWishlist);
+router.delete("/:wishlistId", authMiddleware(), removeItemFromWishlist);
 
 export default router;

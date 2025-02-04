@@ -3,25 +3,27 @@ import {
   getProfile,
   updateProfile,
   uploadProfilePicture,
-  saveProfilePicture
+  saveProfilePicture,
 } from "../controllers/profileController.js";
 import { upload, handleMulterErrors } from "../utils/uploadConfig.js";
-import { authMiddleware, protect } from "../middlewares/authMiddleware.js";
+import { authMiddleware } from "../middlewares/authMiddleware.js";
 
 const router = express.Router();
 
-// Enhanced routes with proper middleware sequencing
+// POST /api/profile/upload – Upload a new profile picture
 router.post(
-  "/profile/upload",
-  authMiddleware,        // Authentication first
-  upload.single("profilePicture"), // File handling second
-  handleMulterErrors,    // Handle upload errors third
-  uploadProfilePicture   // Main logic last
+  "/upload",
+  authMiddleware(), // Call the factory function to get the middleware
+  upload.single("profilePicture"),
+  handleMulterErrors,
+  uploadProfilePicture
 );
 
-router.put("/profile/save", 
-  authMiddleware,
-  (req, res, next) => { // Add validation middleware
+// PUT /api/profile/save – Save the profile picture URL in DB
+router.put(
+  "/save",
+  authMiddleware(),
+  (req, res, next) => {
     if (!req.body.profilePicture) {
       return res.status(400).json({ error: "Missing profile picture URL" });
     }
@@ -30,8 +32,10 @@ router.put("/profile/save",
   saveProfilePicture
 );
 
-// Existing routes remain unchanged
-router.get("/profile", protect, authMiddleware(), getProfile);
-router.put("/profile", authMiddleware(), updateProfile);
+// GET /api/profile – Get profile information
+router.get("/", authMiddleware(), getProfile);
+
+// PUT /api/profile – Update profile information
+router.put("/", authMiddleware(), updateProfile);
 
 export default router;

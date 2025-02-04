@@ -31,7 +31,7 @@ router.put("/profile/save",
 );
 
 // Existing routes remain unchanged
-router.get("/profile", protect, authMiddleware, getProfile);
-router.put("/profile", authMiddleware, updateProfile);
+router.get("/profile", protect, authMiddleware(), getProfile);
+router.put("/profile", authMiddleware(), updateProfile);
 
 export default router;

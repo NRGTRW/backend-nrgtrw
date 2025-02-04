@@ -168,140 +168,68 @@ export const saveProfilePicture = async (req, res) => {
   }
 };
 
-// export { upload, handleMulterErrors };
-// import { PrismaClient } from '@prisma/client';
-// import { decrypt, encrypt } from '../utils/cryptoUtils.js';
+// =======================
+// Admin Functions
+// =======================
 
-// const prisma = new PrismaClient();
-
-// // Unified Profile Controller
-// // controllers/userController.js - Updated getProfile
-// export const getProfile = async (req, res) => {
-//   try {
-//     // Get fresh user data with all necessary fields
-//     const user = await prisma.user.findUnique({
-//       where: { id: req.user.id },
-//       select: {
-//         id: true,
-//         name: true,
-//         email: true,
-//         role: true,
-//         address: true,
-//         phone: true,
-//         profilePicture: true,
-//         createdAt: true,
-//         updatedAt: true
-//       }
-//     });
-
-//     if (!user) return res.status(404).json({ error: "User not found" });
-
-//     // Decrypt sensitive fields
-//     const decryptedData = {
-//       ...user,
-//       address: user.address ? decrypt(user.address) : null,
-//       phone: user.phone ? decrypt(user.phone) : null
-//     };
-
-//     res.status(200).json(decryptedData);
-//   } catch (error) {
-//     console.error("Profile error:", error);
-//     res.status(500).json({ error: "Failed to load profile" });
-//   }
-// };
-
-// export const updateProfile = async (req, res) => {
-//   try {
-//     const { name, address, phone } = req.body;
-
-//     const updatedUser = await prisma.user.update({
-//       where: { id: req.user.id },
-//       data: {
-//         name,
-//         address: address ? encrypt(address) : undefined,
-//         phone: phone ? encrypt(phone) : undefined
-//       },
-//       select: {
-//         id: true,
-//         name: true,
-//         email: true,
-//         role: true,
-//         createdAt: true,
-//         updatedAt: true
-//       }
-//     });
-
-//     res.status(200).json({
-//       success: true,
-//       message: "Profile updated successfully",
-//       data: updatedUser
-//     });
-
-//   } catch (error) {
-//     console.error("Update error:", error);
-//     res.status(500).json({
-//       success: false,
-//       error: "Profile update failed",
-//       details: error.message
-//     });
-//   }
-// };
-
-// // Admin Functions
-// export const getUsers = async (req, res) => {
-//   try {
-//     const users = await prisma.user.findMany({
-//       select: {
-//         id: true,
-//         name: true,
-//         email: true,
-//         role: true,
-//         createdAt: true,
-//         profilePicture: true
-//       },
-//       orderBy: { createdAt: 'desc' }
-//     });
+// Fetch all users (Admin-only)
+export const getUsers = async (req, res) => {
+  try {
+    const users = await prisma.user.findMany({
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        role: true,
+        createdAt: true,
+        profilePicture: true
+      },
+      orderBy: { createdAt: 'desc' }
+    });
     
-//     res.json({
-//       success: true,
-//       data: users
-//     });
-//   } catch (error) {
-//     console.error("User fetch error:", error);
-//     res.status(500).json({
-//       success: false,
-//       error: "Failed to fetch users"
-//     });
-//   }
-// };
+    res.json({
+      success: true,
+      data: users
+    });
+  } catch (error) {
+    console.error("User fetch error:", error);
+    res.status(500).json({
+      success: false,
+      error: "Failed to fetch users"
+    });
+  }
+};
 
-// export const updateUserRole = async (req, res) => {
-//   const { userId, newRole } = req.body;
+// Update a user's role (Admin-only)
+export const updateUserRole = async (req, res) => {
+  const { userId, newRole } = req.body;
 
-//   try {
-//     if (!['admin', 'user'].includes(newRole)) {
-//       return res.status(400).json({
-//         success: false,
-//         error: "Invalid role specified"
-//       });
-//     }
+  try {
+    if (!['admin', 'user'].includes(newRole)) {
+      return res.status(400).json({
+        success: false,
+        error: "Invalid role specified"
+      });
+    }
 
-//     const updatedUser = await prisma.user.update({
-//       where: { id: userId },
-//       data: { role: newRole },
-//       select: { id: true, name: true, email: true, role: true }
-//     });
+    const updatedUser = await prisma.user.update({
+      where: { id: userId },
+      data: { role: newRole },
+      select: { id: true, name: true, email: true, role: true }
+    });
 
-//     res.json({
-//       success: true,
-//       message: `Role updated to ${newRole}`,
-//       data: updatedUser
-//     });
-//   } catch (error) {
-//     console.error("Role update error:", error);
-//     res.status(500).json({
-//       success: false,
-//       error: "Role update failed"
-//     });
-//   }
-// };
+    res.json({
+      success: true,
+      message: `Role updated to ${newRole}`,
+      data: updatedUser
+    });
+  } catch (error) {
+    console.error("Role update error:", error);
+    res.status(500).json({
+      success: false,
+      error: "Role update failed"
+    });
+  }
+};
+
+export { upload, handleMulterErrors };

@@ -35,7 +35,7 @@ const transporter = nodemailer.createTransport({
         name,
         email,
         password: hashedPassword,
-        role: "user", // Default role
+        role: "USER", // Default role
         isVerified: false,
         otp,
         otpExpiresAt: new Date(Date.now() + 600000)

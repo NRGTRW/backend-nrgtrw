@@ -5,7 +5,7 @@ const prisma = new PrismaClient();
  * ✅ Assign Admin Role (Root Admin Only)
  */
 export const assignAdminRole = async (req, res) => {
-  if (req.user.role !== "root_admin") {
+  if (req.user.role !== "ROOT_ADMIN") {
     return res.status(403).json({ error: "Only root admin can assign admins." });
   }
 
@@ -13,7 +13,7 @@ export const assignAdminRole = async (req, res) => {
   try {
     const updatedUser = await prisma.user.update({
       where: { id: userId },
-      data: { role: "admin" }
+      data: { role: "ADMIN" }
     });
     res.json({ message: "User promoted to admin", user: updatedUser });
   } catch (error) {
@@ -25,7 +25,7 @@ export const assignAdminRole = async (req, res) => {
  * ✅ Remove Admin Role (Root Admin Only)
  */
 export const removeAdminRole = async (req, res) => {
-  if (req.user.role !== "root_admin") {
+  if (req.user.role !== "ROOT_ADMIN") {
     return res.status(403).json({ error: "Only root admin can remove admins." });
   }
 
@@ -33,7 +33,7 @@ export const removeAdminRole = async (req, res) => {
   try {
     const updatedUser = await prisma.user.update({
       where: { id: userId },
-      data: { role: "user" }
+      data: { role: "USER" }
     });
     res.json({ message: "User demoted from admin", user: updatedUser });
   } catch (error) {

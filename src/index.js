@@ -113,7 +113,7 @@ app.use("/api/profile", profileRoutes);
 app.use("/api/products", productRoutes);
 app.use("/api/cart", cartRoutes);
 app.use("/api/wishlist", wishlistRoutes);
-app.use("/api/admin", adminRoutes);
+app.use("/api", adminRoutes);
 app.use("/api/upload", uploadRoutes);
 
 

@@ -149,36 +149,57 @@ export const createProduct = async (req, res) => {
  */
 export const deleteProduct = async (req, res) => {
   const { id } = req.params;
+
   try {
+    // Parse the product ID from the URL parameter
     const productId = parseInt(id, 10);
+    console.log(`Received DELETE request for product with ID: ${productId}`);
+
+    // Check if the product exists
     const product = await prisma.product.findUnique({
       where: { id: productId },
     });
+
     if (!product) {
+      console.log(`Product with ID ${productId} not found.`);
       return res.status(404).json({ error: "Product not found" });
     }
-    // Determine images to delete (using images array if available, otherwise fallback to imageUrl)
+
+    console.log(`Product found for deletion:`, product);
+
+    // Determine which images need to be deleted (if any)
     const imagesToDelete = (product.images && Array.isArray(product.images))
       ? product.images
       : (product.imageUrl ? [product.imageUrl] : []);
+    
+    console.log(`Images to delete:`, imagesToDelete);
 
+    // Delete images from S3
     for (const imageUrl of imagesToDelete) {
       try {
+        console.log(`Attempting to delete image: ${imageUrl}`);
         const url = new URL(imageUrl);
-        const key = url.pathname.substring(1); // Remove leading '/'
+        const key = url.pathname.substring(1); // Remove the leading '/'
+
         await s3.send(
           new DeleteObjectCommand({
             Bucket: process.env.AWS_S3_BUCKET_NAME,
             Key: key,
           })
         );
+        console.log(`Successfully deleted image: ${imageUrl}`);
       } catch (deleteError) {
         console.error(`Error deleting image ${imageUrl}:`, deleteError.message);
       }
     }
-    await prisma.product.delete({
+
+    // Delete the product from the database
+    const deletedProduct = await prisma.product.delete({
       where: { id: productId },
     });
+
+    console.log(`Product deleted successfully:`, deletedProduct);
+
     res.status(200).json({ success: true, message: "Product deleted successfully" });
   } catch (error) {
     console.error("❌ Error deleting product:", error.message);

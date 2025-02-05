@@ -16,6 +16,8 @@ router.get("/:id", getProductById);
 
 // ✅ Protected Routes (Admin Only) - Supports File Upload
 router.post("/", authMiddleware, adminMiddleware, upload.array("images", 10), createProduct);
-router.delete("/:id", authMiddleware, adminMiddleware, deleteProduct);
+
+// ✅ Delete Product (Admin Only)
+router.delete("/products/:id", authMiddleware(["ADMIN", "ROOT_ADMIN"]), adminMiddleware(), deleteProduct);
 
 export default router;

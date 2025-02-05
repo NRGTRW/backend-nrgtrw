@@ -53,7 +53,7 @@ export const getProfile = async (req, res) => {
       id: user.id,
       name: user.name,
       email: user.email,
-      // Decrypt the fields if they exist
+      role: user.role,
       address: user.address ? decrypt(user.address) : null,
       phone: user.phone ? decrypt(user.phone) : null,
       profilePicture: user.profilePicture || null,
@@ -192,16 +192,20 @@ export const getUsers = async (req, res) => {
       },
       orderBy: { createdAt: 'desc' }
     });
-    
+
     res.json({
       success: true,
-      data: users
+      data: users.map(user => ({
+        ...user,
+        createdAt: user.createdAt.toISOString()
+      }))
     });
   } catch (error) {
     console.error("User fetch error:", error);
     res.status(500).json({
       success: false,
-      error: "Failed to fetch users"
+      error: "Failed to fetch users",
+      details: error.message
     });
   }
 };
@@ -211,31 +215,35 @@ export const updateUserRole = async (req, res) => {
   const { userId, newRole } = req.body;
 
   try {
-    if (!['admin', 'user'].includes(newRole)) {
+    // Convert input to uppercase
+    const normalizedRole = newRole.toUpperCase();
+    
+    if (!['ADMIN', 'USER'].includes(normalizedRole)) {
       return res.status(400).json({
         success: false,
         error: "Invalid role specified"
       });
     }
 
+    // Update with normalized role
     const updatedUser = await prisma.user.update({
       where: { id: userId },
-      data: { role: newRole },
+      data: { role: normalizedRole },
       select: { id: true, name: true, email: true, role: true }
     });
 
     res.json({
       success: true,
-      message: `Role updated to ${newRole}`,
+      message: `Role updated to ${normalizedRole}`, // Changed to use normalizedRole
       data: updatedUser
     });
   } catch (error) {
     console.error("Role update error:", error);
     res.status(500).json({
       success: false,
-      error: "Role update failed"
+      error: "Role update failed",
+      details: error.message // Added error details for debugging
     });
   }
 };
-
 export { upload, handleMulterErrors };

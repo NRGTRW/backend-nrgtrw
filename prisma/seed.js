@@ -3,7 +3,7 @@ import bcrypt from "bcrypt";
 import { encrypt } from "../src/utils/cryptoUtils.js";
 
 const prisma = new PrismaClient();
-const fallbackImage = "https://example.com/fallback.jpg";
+const fallbackImage = "https://example.com/fallback.jpg"; 
 
 const isValidUrl = (url) => {
   try {

@@ -35,6 +35,41 @@ const uploadImagesToS3 = async (files) => {
   return Promise.all(uploadPromises);
 };
 
+export const createProduct = async (req, res) => {
+  const { name, description, price, stock, categoryId, sizes, colors } = req.body;
+
+  // Handle image uploads
+  const imagePaths = [];
+  req.files.forEach((file) => {
+    imagePaths.push(file.path); // Or if you're uploading to S3, use the S3 URL
+  });
+
+  // Handle colors
+  const colorData = colors.map((color, index) => ({
+    colorName: color.colorName,
+    imageUrl: imagePaths[index * 2], // Main image URL
+    hoverImage: imagePaths[index * 2 + 1], // Hover image URL
+  }));
+
+  // Proceed with product creation logic
+  const createdProduct = await prisma.product.create({
+    data: {
+      name,
+      description,
+      price,
+      stock,
+      categoryId,
+      images: imagePaths, // Images for the product
+      sizes: { create: sizes.map((sizeId) => ({ size: { connect: { id: sizeId } } })) },
+      colors: { create: colorData },
+    },
+  });
+
+  res.status(201).json({ message: "Product created successfully", data: createdProduct });
+};
+
+
+
 /**
  * Get all products.
  * Includes related product sizes and colors.
@@ -90,56 +125,6 @@ export const getProductById = async (req, res) => {
     if (!res.headersSent) {
       return res.status(500).json({ error: "Failed to fetch product." });
     }
-  }
-};
-
-/**
- * Create a new product.
- * Expects product details in req.body and image files (up to 10) via req.files.
- */
-export const createProduct = async (req, res) => {
-  try {
-    const { name, description, price, stock, categoryId } = req.body;
-    if (!name || !description || !price || !stock) {
-      return res.status(400).json({ error: "Name, description, price, and stock are required" });
-    }
-
-    // Parse numeric fields
-    const parsedPrice = parseFloat(price);
-    const parsedStock = parseInt(stock, 10);
-    const parsedCategoryId = categoryId ? parseInt(categoryId, 10) : null;
-
-    // Handle image uploads: use uploaded files or a provided imageUrl in the body
-    let images = [];
-    if (req.files && req.files.length > 0) {
-      images = await uploadImagesToS3(req.files);
-    } else if (req.body.imageUrl) {
-      images = [req.body.imageUrl];
-    } else {
-      return res.status(400).json({ error: "At least one image is required" });
-    }
-    const primaryImage = images[0];
-
-    const product = await prisma.product.create({
-      data: {
-        name,
-        description,
-        price: parsedPrice,
-        stock: parsedStock,
-        categoryId: parsedCategoryId,
-        imageUrl: primaryImage,
-        images: images, // This field accepts an array of image URLs (as JSON)
-      },
-    });
-
-    res.status(201).json({
-      success: true,
-      message: "Product created successfully",
-      data: product,
-    });
-  } catch (error) {
-    console.error("❌ Error creating product:", error.message);
-    res.status(500).json({ error: "Failed to create product" });
   }
 };
 

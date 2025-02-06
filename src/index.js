@@ -47,26 +47,18 @@ app.use(
   })
 );
 
-// Add DELETE body parsing middleware BEFORE express.json()
-app.use((req, res, next) => {
-  if (req.method === 'DELETE') {
-    express.json()(req, res, next);
-  } else {
-    next();
-  }
-});
+
 
 // Middleware
 app.use(helmet());
 app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 app.use(
   rateLimit({
     windowMs: 15 * 60 * 1000, // 15 minutes
     max: 1000, // Limit each IP to 1000 requests per windowMs
   })
 );
-app.use(express.json()); // Parses JSON payloads
-app.use(express.urlencoded({ extended: true })); // Parses URL-encoded payloads
 
 
 // Static File Serving for Uploaded Files

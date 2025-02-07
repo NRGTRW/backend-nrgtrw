@@ -1,7 +1,7 @@
 import express from "express";
 import multer from "multer";
 import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
-import { authMiddleware, adminMiddleware } from "../middlewares/authMiddleware.js";
+import { authAndAdminMiddleware } from "../middlewares/authMiddleware.js";
 import { deleteProduct, getAllProducts, getProductById } from "../controllers/productController.js";
 import { PrismaClient } from "@prisma/client";
 
@@ -47,8 +47,7 @@ router.get("/:id", getProductById);
 // ✅ Add New Product (Admin Only)
 router.post(
   "/",
-  authMiddleware(["ADMIN", "ROOT_ADMIN"]),
-  adminMiddleware(),
+  authAndAdminMiddleware(["ADMIN", "ROOT_ADMIN"]),
   async (req, res) => {
     try {
       const { name, description, price, categoryId, sizes, colors } = req.body;
@@ -95,8 +94,7 @@ router.post(
 // ✅ Upload Images for Product (Admin Only)
 router.post(
   "/upload-images",
-  authMiddleware(["ADMIN", "ROOT_ADMIN"]),
-  adminMiddleware(),
+  authAndAdminMiddleware(["ADMIN", "ROOT_ADMIN"]),
   upload.fields([
     { name: "mainImage", maxCount: 1 },
     { name: "hoverImage", maxCount: 1 },
@@ -198,8 +196,7 @@ router.post(
 // ✅ Delete Product (Admin Only)
 router.delete(
   "/products/:id",
-  authMiddleware(["ADMIN", "ROOT_ADMIN"]),
-  adminMiddleware(),
+  authAndAdminMiddleware(["ADMIN", "ROOT_ADMIN"]),
   deleteProduct
 );
 

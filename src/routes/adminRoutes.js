@@ -1,17 +1,16 @@
 import express from "express";
-import { authMiddleware, adminMiddleware } from "../middlewares/authMiddleware.js";
-import { updateUserRole, getUsers } from "../controllers/profileController.js";
-import { deleteProduct } from "../controllers/productController.js";
+import { authAndAdminMiddleware } from "../middlewares/authMiddleware.js";
+import { updateUserRole, getUsers, deleteUser } from "../controllers/profileController.js";
 
 const router = express.Router();
 
 // Role Management (Root Admin only)
-router.put("/users/role", authMiddleware(["ROOT_ADMIN"]), adminMiddleware(), updateUserRole);
-
+router.put("/admin/users/role", authAndAdminMiddleware(["ROOT_ADMIN"]), updateUserRole);
+  
 // Get users (Admin + Root Admin)
-router.get("/admin/users", authMiddleware(["ADMIN", "ROOT_ADMIN"]), adminMiddleware(), getUsers);
+router.get("/admin/users", authAndAdminMiddleware(["ADMIN", "ROOT_ADMIN"]), getUsers);
 
 // Delete product (Admin + Root Admin)
-router.delete("/products/:id", authMiddleware(["ADMIN", "ROOT_ADMIN"]), adminMiddleware(), deleteProduct);
-
+router.delete("/admin/users/:id", authAndAdminMiddleware(["ADMIN", "ROOT_ADMIN"]), deleteUser);
+  
 export default router;

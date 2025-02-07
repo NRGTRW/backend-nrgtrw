@@ -21,7 +21,7 @@ export const getWishlistByUser = async (userId) => {
     });
     
 
-    console.log("🔍 Wishlist from DB:", wishlist);
+    // console.log("🔍 Wishlist from DB:", wishlist);
     return wishlist;
   } catch (error) {
     console.error("[DB] Error fetching wishlist:", error);

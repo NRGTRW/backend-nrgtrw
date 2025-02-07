@@ -4,13 +4,13 @@ import {
   addItemToWishlist,
   removeItemFromWishlist,
 } from "../controllers/wishlistController.js";
-import { authMiddleware } from "../middlewares/authMiddleware.js";
+import { authAndAdminMiddleware } from "../middlewares/authMiddleware.js";
 
 const router = express.Router();
 
 // Note: Call authMiddleware() to get the middleware function
-router.get("/", authMiddleware(), getWishlist);
-router.post("/", authMiddleware(), addItemToWishlist);
-router.delete("/:wishlistId", authMiddleware(), removeItemFromWishlist);
+router.get("/", authAndAdminMiddleware(), getWishlist);
+router.post("/", authAndAdminMiddleware(), addItemToWishlist);
+router.delete("/:wishlistId", authAndAdminMiddleware(), removeItemFromWishlist);
 
 export default router;

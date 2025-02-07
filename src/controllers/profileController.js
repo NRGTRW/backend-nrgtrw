@@ -215,7 +215,7 @@ export const updateUserRole = async (req, res) => {
   const { userId, newRole } = req.body;
 
   try {
-    // Convert input to uppercase
+    // Convert input to uppercase to prevent case sensitivity issues
     const normalizedRole = newRole.toUpperCase();
     
     if (!['ADMIN', 'USER'].includes(normalizedRole)) {
@@ -225,7 +225,7 @@ export const updateUserRole = async (req, res) => {
       });
     }
 
-    // Update with normalized role
+    // Update role
     const updatedUser = await prisma.user.update({
       where: { id: userId },
       data: { role: normalizedRole },
@@ -234,7 +234,7 @@ export const updateUserRole = async (req, res) => {
 
     res.json({
       success: true,
-      message: `Role updated to ${normalizedRole}`, // Changed to use normalizedRole
+      message: `Role updated to ${normalizedRole}`,
       data: updatedUser
     });
   } catch (error) {
@@ -242,8 +242,37 @@ export const updateUserRole = async (req, res) => {
     res.status(500).json({
       success: false,
       error: "Role update failed",
-      details: error.message // Added error details for debugging
+      details: error.message
     });
   }
 };
+
+export const deleteUser = async (req, res) => {
+  try {
+    const userId = parseInt(req.params.id);
+
+    if (!userId) {
+      return res.status(400).json({ success: false, error: "Invalid user ID." });
+    }
+
+    const user = await prisma.user.findUnique({ where: { id: userId } });
+
+    if (!user) {
+      return res.status(404).json({ success: false, error: "User not found." });
+    }
+
+    if (user.role === "ROOT_ADMIN") {
+      return res.status(403).json({ success: false, error: "You cannot delete the ROOT_ADMIN." });
+    }
+
+    await prisma.user.delete({ where: { id: userId } });
+
+    res.json({ success: true, message: "User deleted successfully." });
+  } catch (error) {
+    console.error("Delete user error:", error);
+    res.status(500).json({ success: false, error: "Failed to delete user." });
+  }
+};
+
+
 export { upload, handleMulterErrors };

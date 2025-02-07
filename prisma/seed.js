@@ -3,7 +3,7 @@ import bcrypt from "bcrypt";
 import { encrypt } from "../src/utils/cryptoUtils.js";
 
 const prisma = new PrismaClient();
-const fallbackImage = "https://example.com/fallback.jpg"; 
+const fallbackImage = "https://example.com/fallback.jpg";
 
 const isValidUrl = (url) => {
   try {
@@ -26,25 +26,23 @@ const seedSizes = async () => {
       });
     }
     console.log("✅ Seeded global sizes:", globalSizes);
-
-    const storedSizes = await prisma.size.findMany();
-    console.log("🛠️ Stored Sizes in DB:", storedSizes);
   } catch (error) {
     console.error("❌ Error seeding sizes:", error.message);
   }
 };
 
+// Seed Users
 const seedUsers = async () => {
   try {
     const hashedPassword = await bcrypt.hash("Nikcho2006", 10);
     const encryptedAddress = encrypt("Lyulin 8, bl.815, vh.A");
     const encryptedPhone = encrypt("0897338635");
 
-    const user = await prisma.user.upsert({
+    await prisma.user.upsert({
       where: { email: "nrgtrwsales@gmail.com" },
       update: {
         updatedAt: new Date(),
-        role: Role.ROOT_ADMIN, // Explicitly using Prisma Enum
+        role: Role.ROOT_ADMIN,
       },
       create: {
         email: "nrgtrwsales@gmail.com",
@@ -58,9 +56,26 @@ const seedUsers = async () => {
       },
     });
 
-    console.log("✅ Seeded/Updated User:", user);
+    console.log("✅ Seeded/Updated User");
   } catch (error) {
     console.error("❌ Error seeding user:", error.message);
+  }
+};
+
+// Seed Categories
+const seedCategories = async () => {
+  try {
+    const categories = ["Elegance", "Pump Covers", "Confidence"];
+    for (const category of categories) {
+      await prisma.category.upsert({
+        where: { name: category },
+        update: {},
+        create: { name: category },
+      });
+    }
+    console.log("✅ Seeded categories:", categories);
+  } catch (error) {
+    console.error("❌ Error seeding categories:", error.message);
   }
 };
 
@@ -70,26 +85,18 @@ const seedProducts = async (products) => {
     for (const product of products) {
       console.log(`Processing product: ${product.name}`);
 
-      // Find or create category
       const category = await prisma.category.upsert({
         where: { name: product.category },
         update: {},
         create: { name: product.category },
       });
 
-      // Assign global sizes if product.sizes is missing
       const productSizes = product.sizes?.length ? product.sizes : globalSizes;
-      console.log(`🛠️ Assigned sizes for ${product.name}:`, productSizes);
-
-      // Fetch existing sizes
       const availableSizes = await prisma.size.findMany({
         where: { size: { in: productSizes.map((s) => s.toString()) } },
       });
 
-      console.log(`✅ Found ${availableSizes.length} sizes in DB for ${product.name}`);
-
-      // Create product
-      const createdProduct = await prisma.product.create({
+      await prisma.product.create({
         data: {
           name: product.name,
           price: product.price,
@@ -104,7 +111,7 @@ const seedProducts = async (products) => {
               hoverImage: isValidUrl(color.hoverImage) ? color.hoverImage : fallbackImage,
             })) || [],
           },
-          sizes: {  // ✅ Corrected: Use "sizes" instead of "productsize"
+          sizes: {
             create: availableSizes.map((size) => ({
               size: { connect: { id: size.id } }
             }))
@@ -118,17 +125,17 @@ const seedProducts = async (products) => {
     console.log("✅ Database seeded successfully!");
   } catch (error) {
     console.error("❌ Error while seeding database:", error.message);
-    if (error.meta) console.error("Meta Information:", error.meta);
   }
 };
 
-// Seed Database
 const main = async () => {
   console.log("🌱 Seeding database...");
   await seedSizes();
   await seedUsers();
+  await seedCategories();
 
-  const products = [...eleganceProducts, ...pumpCoverProducts]; // Combine all product arrays
+  // Combine only non-empty product arrays
+  const products = [...eleganceProducts, ...pumpCoverProducts, ...confidenceProducts];
   await seedProducts(products);
 
   console.log("🌱 Seeding completed!");
@@ -426,136 +433,4 @@ const pumpCoverProducts = [
     ]
   }
 ];
-//  const confidenceProducts = [
-//     {
-//       id: 5,
-//       name: "Samurai Pants",
-//       price: 199.0,
-//       description:
-//         "Sleek Samurai-inspired pants designed for movement and style.",
-//       category: "Confidence",
-//       imageUrl: `${BASE_URL}/images/BlackSamurai.webp`,
-// 
-// stock: 100,
-//       colors: [
-//         {
-//           colorName: "Black",
-//           image: `${BASE_URL}/images/BlackSamurai.webp`,
-//           hoverImage: `${BASE_URL}/HoverImages/BlackSamuraiHover.webp`
-//         },
-//         {
-//           colorName: "Grey",
-//           image: `${BASE_URL}/DifferentColors/GreySamurai.webp`,
-//           hoverImage: `${BASE_URL}/HoverImages/GreySamuraiHover.webp`
-//         },
-//         {
-//           colorName: "White",
-//           image: `${BASE_URL}/DifferentColors/WhiteSamurai.webp`,
-//           hoverImage: `${BASE_URL}/HoverImages/WhiteSamuraiHover.webp`
-//         },
-//         {
-//           colorName: "Brown",
-//           image: `${BASE_URL}/DifferentColors/BrownSamurai.webp`,
-//           hoverImage: `${BASE_URL}/HoverImages/BrownSamuraiHover.webp`
-//         }
-//       ]
-//     },
-//     {
-//       id: 6,
-//       name: "Hoodie",
-//       price: 79.0,
-//       description: "Warm, oversized hoodie ideal for cozy days or workouts.",
-//       category: "Confidence",
-//       imageUrl: `${BASE_URL}/images/BlackHoodie.webp`,
-//   
-// stock: 100,
-//       colors: [
-//         {
-//           colorName: "Black",
-//           image: `${BASE_URL}/images/BlackHoodie.webp`,
-//           hoverImage: `${BASE_URL}/HoverImages/BlackHoodieHover.webp`
-//         },
-//         {
-//           colorName: "Grey",
-//           image: `${BASE_URL}/DifferentColors/GreyHoodie.webp`,
-//           hoverImage: `${BASE_URL}/HoverImages/GreyHoodieHover.webp`
-//         },
-//         {
-//           colorName: "White",
-//           image: `${BASE_URL}/DifferentColors/WhiteHoodie.webp`,
-//           hoverImage: `${BASE_URL}/HoverImages/WhiteHoodieHover.webp`
-//         },
-//         {
-//           colorName: "Brown",
-//           image: `${BASE_URL}/DifferentColors/BrownHoodie.webp`,
-//           hoverImage: `${BASE_URL}/HoverImages/BrownHoodieHover.webp`
-//         }
-//       ]
-//     },
-//     {
-//       id: 7,
-//       name: "Shorts",
-//       price: 99.0,
-//       description:
-//         "Comfortable shorts with a premium design, perfect for sports or leisure.",
-//       category: "Confidence",
-//       imageUrl: `${BASE_URL}/images/BlackShorts.webp`,
-//   
-// stock: 100,
-//       colors: [
-//         {
-//           colorName: "Black",
-//           image: `${BASE_URL}/images/BlackShorts.webp`,
-//           hoverImage: `${BASE_URL}/HoverImages/BlackShortsHover(1).webp`
-//         },
-//         {
-//           colorName: "Grey",
-//           image: `${BASE_URL}/DifferentColors/GreyShorts.webp`,
-//           hoverImage: `${BASE_URL}/HoverImages/GreyShortsHover.webp`
-//         },
-//         {
-//           colorName: "White",
-//           image: `${BASE_URL}/DifferentColors/WhiteShorts.webp`,
-//           hoverImage: `${BASE_URL}/HoverImages/WhiteShortsHover.webp`
-//         },
-//         {
-//           colorName: "Brown",
-//           image: `${BASE_URL}/DifferentColors/BrownShorts.webp`,
-//           hoverImage: `${BASE_URL}/HoverImages/BrownShortsHover.webp`
-//         }
-//       ]
-//     },
-//     {
-//       id: 8,
-//       name: "T-Shirt",
-//       price: 49.0,
-//       description:
-//         "Casual and versatile T-shirt for everyday wear, available in a variety of colors.",
-//       category: "Confidence",
-//       imageUrl: `${BASE_URL}/images/BlackT.webp`,
-//   
-// stock: 100,
-//       colors: [
-//         {
-//           colorName: "Black",
-//           image: `${BASE_URL}/images/BlackT.webp`,
-//           hoverImage: `${BASE_URL}/HoverImages/BlackTHover.webp`
-//         },
-//         {
-//           colorName: "Grey",
-//           image: `${BASE_URL}/images/GreyT.webp`,
-//           hoverImage: `${BASE_URL}/HoverImages/GreyTHover.webp`
-//         },
-//         {
-//           colorName: "White",
-//           image: `${BASE_URL}/images/WhiteT.webp`,
-//           hoverImage: `${BASE_URL}/HoverImages/WhiteTHover.webp`
-//         },
-//         {
-//           colorName: "Brown",
-//           image: `${BASE_URL}/images/BrownT.webp`,
-//           hoverImage: `${BASE_URL}/HoverImages/BrownTHover.webp`
-//         }
-//       ]
-//     }
-//   ];
+ const confidenceProducts = [];

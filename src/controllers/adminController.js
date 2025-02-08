@@ -1,12 +1,11 @@
 import { PrismaClient } from "@prisma/client";
 const prisma = new PrismaClient();
 
-/**
- * ✅ Assign Admin Role (Root Admin Only)
- */
 export const assignAdminRole = async (req, res) => {
   if (req.user.role !== "ROOT_ADMIN") {
-    return res.status(403).json({ error: "Only root admin can assign admins." });
+    return res
+      .status(403)
+      .json({ error: "Only root admin can assign admins." });
   }
 
   const { userId } = req.body;
@@ -21,12 +20,11 @@ export const assignAdminRole = async (req, res) => {
   }
 };
 
-/**
- * ✅ Remove Admin Role (Root Admin Only)
- */
 export const removeAdminRole = async (req, res) => {
   if (req.user.role !== "ROOT_ADMIN") {
-    return res.status(403).json({ error: "Only root admin can remove admins." });
+    return res
+      .status(403)
+      .json({ error: "Only root admin can remove admins." });
   }
 
   const { userId } = req.body;

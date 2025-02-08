@@ -3,10 +3,8 @@ import wishlistService from "../services/wishlistService.js";
 export const getWishlist = async (req, res) => {
   try {
     const userId = req.user?.id;
-    // Fetch wishlist via the service layer
     const wishlistItems = await wishlistService.getWishlistByUser(userId);
 
-    // Format the wishlist items as needed by the frontend
     const formattedWishlist = wishlistItems.map((item) => ({
       id: item.id,
       productId: item.productId,
@@ -17,8 +15,8 @@ export const getWishlist = async (req, res) => {
         name: item.product?.name,
         price: item.product?.price,
         imageUrl: item.product?.imageUrl,
-        colors: item.product?.colors,
-      },
+        colors: item.product?.colors
+      }
     }));
 
     console.log("✅ Wishlist Data Sent to Frontend:", formattedWishlist);
@@ -51,7 +49,7 @@ export const addItemToWishlist = async (req, res) => {
       productId: Number(productId),
       selectedSize: selectedSize || null,
       selectedColor: selectedColor || null,
-      quantity: quantity || 1,
+      quantity: quantity || 1
     });
 
     console.log("✅ Item added to Wishlist:", newItem);
@@ -60,7 +58,7 @@ export const addItemToWishlist = async (req, res) => {
     console.error("🚨 Wishlist Error:", error);
     res.status(400).json({
       error: "Bad request",
-      message: error.message || "Could not add item to wishlist.",
+      message: error.message || "Could not add item to wishlist."
     });
   }
 };
@@ -71,10 +69,11 @@ export const removeItemFromWishlist = async (req, res) => {
     const { wishlistId } = req.params;
 
     if (!wishlistId) {
-      return res.status(400).json({ message: "Wishlist ID is required for removal." });
+      return res
+        .status(400)
+        .json({ message: "Wishlist ID is required for removal." });
     }
 
-    // The service returns an object with a "count" property from deleteMany
     const result = await wishlistService.removeFromWishlist(userId, wishlistId);
 
     if (result.count && result.count > 0) {

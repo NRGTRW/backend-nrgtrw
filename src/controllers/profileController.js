@@ -1,21 +1,23 @@
 import { PrismaClient } from "@prisma/client";
 import { decrypt, encrypt } from "../utils/cryptoUtils.js";
-import { S3Client, DeleteObjectCommand, PutObjectCommand } from "@aws-sdk/client-s3";
+import {
+  S3Client,
+  DeleteObjectCommand,
+  PutObjectCommand
+} from "@aws-sdk/client-s3";
 import multer from "multer";
 import { v4 as uuidv4 } from "uuid";
 
 const prisma = new PrismaClient();
 
-// Configure AWS S3 Client (v3)
 const s3 = new S3Client({
   credentials: {
     accessKeyId: process.env.AWS_ACCESS_KEY_ID,
-    secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
+    secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY
   },
-  region: process.env.AWS_REGION || 'eu-central-1',
+  region: process.env.AWS_REGION || "eu-central-1"
 });
 
-// Multer Configuration for in-memory file storage
 const upload = multer({
   storage: multer.memoryStorage(),
   limits: { fileSize: 20 * 1024 * 1024 },
@@ -26,10 +28,9 @@ const upload = multer({
       console.error("Rejected file type:", file.mimetype);
       cb(new Error("Only image files are allowed"), false);
     }
-  },
+  }
 });
 
-// Multer error handling middleware
 const handleMulterErrors = (error, req, res, next) => {
   if (error instanceof multer.MulterError) {
     console.error("Multer error:", error.message);
@@ -41,10 +42,8 @@ const handleMulterErrors = (error, req, res, next) => {
   next();
 };
 
-// Get Profile Handler
 export const getProfile = async (req, res) => {
   try {
-    // Instead of relying on req.user from the token, query the database.
     const userId = req.user.id;
     const user = await prisma.user.findUnique({ where: { id: userId } });
     if (!user) return res.status(404).json({ error: "User not found" });
@@ -56,7 +55,7 @@ export const getProfile = async (req, res) => {
       role: user.role,
       address: user.address ? decrypt(user.address) : null,
       phone: user.phone ? decrypt(user.phone) : null,
-      profilePicture: user.profilePicture || null,
+      profilePicture: user.profilePicture || null
     });
   } catch (error) {
     console.error("Failed to load profile:", error.message);
@@ -64,9 +63,6 @@ export const getProfile = async (req, res) => {
   }
 };
 
-
-
-// Update Profile Handler
 export const updateProfile = async (req, res) => {
   try {
     const userId = req.user.id;
@@ -78,13 +74,13 @@ export const updateProfile = async (req, res) => {
         name,
         address: address ? encrypt(address) : undefined,
         phone: phone ? encrypt(phone) : undefined,
-        profilePicture,
-      },
+        profilePicture
+      }
     });
 
     res.status(200).json({
       message: "Profile updated successfully",
-      user: updatedUser,
+      user: updatedUser
     });
   } catch (error) {
     console.error("Error updating profile:", error.message);
@@ -92,19 +88,19 @@ export const updateProfile = async (req, res) => {
   }
 };
 
-// Upload Profile Picture to S3 (AWS SDK v3)
 export const uploadProfilePicture = async (req, res) => {
   try {
     if (!req.file) throw new Error("No file uploaded");
-    if (!process.env.AWS_S3_BUCKET_NAME) throw new Error("S3 bucket not configured");
+    if (!process.env.AWS_S3_BUCKET_NAME)
+      throw new Error("S3 bucket not configured");
 
     const fileKey = `ProfilePictures/${Date.now()}-${uuidv4()}-${req.file.originalname}`;
-    
+
     const uploadParams = {
       Bucket: process.env.AWS_S3_BUCKET_NAME,
       Key: fileKey,
       Body: req.file.buffer,
-      ContentType: req.file.mimetype,
+      ContentType: req.file.mimetype
     };
 
     await s3.send(new PutObjectCommand(uploadParams));
@@ -114,15 +110,13 @@ export const uploadProfilePicture = async (req, res) => {
     res.json({ previewPath: publicUrl });
   } catch (error) {
     console.error("Upload Error:", error);
-    res.status(500).json({ 
-      error: 'Upload failed',
+    res.status(500).json({
+      error: "Upload failed",
       details: error.message
     });
   }
 };
 
-
-// Save Profile Picture Handler
 export const saveProfilePicture = async (req, res) => {
   try {
     const { profilePicture } = req.body;
@@ -139,22 +133,22 @@ export const saveProfilePicture = async (req, res) => {
 
     if (!user) return res.status(404).json({ error: "User not found" });
 
-    // Delete old image if exists
     if (user.profilePicture) {
       try {
         const oldUrl = new URL(user.profilePicture);
         const oldKey = oldUrl.pathname.substring(1);
-        
-        await s3.send(new DeleteObjectCommand({
-          Bucket: process.env.AWS_S3_BUCKET_NAME,
-          Key: oldKey
-        }));
+
+        await s3.send(
+          new DeleteObjectCommand({
+            Bucket: process.env.AWS_S3_BUCKET_NAME,
+            Key: oldKey
+          })
+        );
       } catch (deleteError) {
-        console.error('Old image deletion error:', deleteError);
+        console.error("Old image deletion error:", deleteError);
       }
     }
 
-    // Update database with new URL
     const updatedUser = await prisma.user.update({
       where: { id: userId },
       data: { profilePicture },
@@ -166,19 +160,15 @@ export const saveProfilePicture = async (req, res) => {
       profilePicture: updatedUser.profilePicture
     });
   } catch (error) {
-    console.error('Save Profile Picture Error:', error);
-    res.status(500).json({ 
+    console.error("Save Profile Picture Error:", error);
+    res.status(500).json({
       error: "Failed to save profile picture",
-      details: error.message 
+      details: error.message
     });
   }
 };
 
-// =======================
-// Admin Functions
-// =======================
 
-// Fetch all users (Admin-only)
 export const getUsers = async (req, res) => {
   try {
     const users = await prisma.user.findMany({
@@ -190,12 +180,12 @@ export const getUsers = async (req, res) => {
         createdAt: true,
         profilePicture: true
       },
-      orderBy: { createdAt: 'desc' }
+      orderBy: { createdAt: "desc" }
     });
 
     res.json({
       success: true,
-      data: users.map(user => ({
+      data: users.map((user) => ({
         ...user,
         createdAt: user.createdAt.toISOString()
       }))
@@ -210,22 +200,19 @@ export const getUsers = async (req, res) => {
   }
 };
 
-// Update a user's role (Admin-only)
 export const updateUserRole = async (req, res) => {
   const { userId, newRole } = req.body;
 
   try {
-    // Convert input to uppercase to prevent case sensitivity issues
     const normalizedRole = newRole.toUpperCase();
-    
-    if (!['ADMIN', 'USER'].includes(normalizedRole)) {
+
+    if (!["ADMIN", "USER"].includes(normalizedRole)) {
       return res.status(400).json({
         success: false,
         error: "Invalid role specified"
       });
     }
 
-    // Update role
     const updatedUser = await prisma.user.update({
       where: { id: userId },
       data: { role: normalizedRole },
@@ -252,7 +239,9 @@ export const deleteUser = async (req, res) => {
     const userId = parseInt(req.params.id);
 
     if (!userId) {
-      return res.status(400).json({ success: false, error: "Invalid user ID." });
+      return res
+        .status(400)
+        .json({ success: false, error: "Invalid user ID." });
     }
 
     const user = await prisma.user.findUnique({ where: { id: userId } });
@@ -262,7 +251,9 @@ export const deleteUser = async (req, res) => {
     }
 
     if (user.role === "ROOT_ADMIN") {
-      return res.status(403).json({ success: false, error: "You cannot delete the ROOT_ADMIN." });
+      return res
+        .status(403)
+        .json({ success: false, error: "You cannot delete the ROOT_ADMIN." });
     }
 
     await prisma.user.delete({ where: { id: userId } });
@@ -273,6 +264,5 @@ export const deleteUser = async (req, res) => {
     res.status(500).json({ success: false, error: "Failed to delete user." });
   }
 };
-
 
 export { upload, handleMulterErrors };

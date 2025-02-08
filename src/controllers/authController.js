@@ -1,22 +1,21 @@
 import { PrismaClient } from "@prisma/client";
-import bcrypt from 'bcrypt';
-import jwt from 'jsonwebtoken';
-import nodemailer from 'nodemailer';
+import bcrypt from "bcrypt";
+import jwt from "jsonwebtoken";
+import nodemailer from "nodemailer";
 
 const prisma = new PrismaClient();
 const transporter = nodemailer.createTransport({
   service: "gmail",
   auth: {
     user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASSWORD,
-  },
+    pass: process.env.EMAIL_PASSWORD
+  }
 });
 
- const signup = async (req, res) => {
+const signup = async (req, res) => {
   try {
     const { name, email, password } = req.body;
-    
-    // Validation checks
+
     if (!name || !email || !password) {
       return res.status(400).json({ error: "All fields are required" });
     }
@@ -26,7 +25,6 @@ const transporter = nodemailer.createTransport({
       return res.status(409).json({ error: "User already exists" });
     }
 
-    // Create user with role
     const hashedPassword = await bcrypt.hash(password, 10);
     const otp = Math.floor(100000 + Math.random() * 900000);
 
@@ -35,14 +33,13 @@ const transporter = nodemailer.createTransport({
         name,
         email,
         password: hashedPassword,
-        role: "USER", // Default role
+        role: "USER",
         isVerified: false,
         otp,
         otpExpiresAt: new Date(Date.now() + 600000)
-      },
+      }
     });
 
-    // Send verification email
     await transporter.sendMail({
       from: process.env.EMAIL_USER,
       to: email,
@@ -103,30 +100,27 @@ const transporter = nodemailer.createTransport({
             </td>
           </tr>
         </table>
-      `,
+      `
     });
 
-    res.status(201).json({ 
+    res.status(201).json({
       message: "Verification email sent",
-      userId: user.id 
+      userId: user.id
     });
-    
   } catch (error) {
     console.error("Signup error:", error);
     res.status(500).json({ error: "Internal server error" });
   }
 };
 
- const login = async (req, res) => {
+const login = async (req, res) => {
   try {
     const { email, password } = req.body;
 
-    // Validate input
     if (!email || !password) {
       return res.status(400).json({ error: "Invalid credentials" });
     }
 
-    // Find user with role
     const user = await prisma.user.findUnique({
       where: { email },
       select: {
@@ -143,25 +137,21 @@ const transporter = nodemailer.createTransport({
       return res.status(401).json({ error: "Invalid credentials" });
     }
 
-    // Check verification status
     if (!user.isVerified) {
       return res.status(403).json({ error: "Account not verified" });
     }
 
-    // Validate password
     const validPassword = await bcrypt.compare(password, user.password);
     if (!validPassword) {
       return res.status(401).json({ error: "Invalid credentials" });
     }
 
-    // Generate JWT
     const token = jwt.sign(
       { id: user.id, role: user.role },
       process.env.JWT_SECRET,
       { expiresIn: "24h" }
     );
 
-    // Return user data with role
     res.json({
       message: "Login successful",
       token,
@@ -172,14 +162,12 @@ const transporter = nodemailer.createTransport({
         role: user.role
       }
     });
-
   } catch (error) {
     console.error("Login error:", error);
     res.status(500).json({ error: "Internal server error" });
   }
 };
 
-// 📌 Password Reset Function (with pre-filled email and background image)
 const resetPassword = async (req, res) => {
   try {
     const { email } = req.body;
@@ -189,22 +177,24 @@ const resetPassword = async (req, res) => {
     if (!user) return res.status(404).json({ error: "User not found" });
 
     const resetToken = jwt.sign({ id: user.id }, process.env.JWT_SECRET, {
-      expiresIn: "15m",
+      expiresIn: "15m"
     });
 
-    // ✅ Ensure CLIENT_URL is properly set
-    const clientUrls = process.env.CLIENT_URL ? process.env.CLIENT_URL.split(",") : [];
-    if (clientUrls.length === 0) return res.status(500).json({ error: "Server configuration error" });
+    const clientUrls = process.env.CLIENT_URL
+      ? process.env.CLIENT_URL.split(",")
+      : [];
+    if (clientUrls.length === 0)
+      return res.status(500).json({ error: "Server configuration error" });
 
-    const preferredUrl = req.headers.origin && clientUrls.includes(req.headers.origin)
-      ? req.headers.origin
-      : clientUrls[0];
+    const preferredUrl =
+      req.headers.origin && clientUrls.includes(req.headers.origin)
+        ? req.headers.origin
+        : clientUrls[0];
 
     const resetLink = `${preferredUrl.replace(/\/$/, "")}/reset-password/${resetToken}?email=${encodeURIComponent(user.email)}`;
 
-    console.log("Generated Reset Link:", resetLink); // Debugging log
+    console.log("Generated Reset Link:", resetLink);
 
-    // ✅ Send Reset Email
     await transporter.sendMail({
       from: process.env.EMAIL_USER,
       to: user.email,
@@ -265,19 +255,17 @@ const resetPassword = async (req, res) => {
             </td>
           </tr>
         </table>
-      `,
+      `
     });
-    
-    res.status(200).json({ message: "Password reset email sent successfully" });
 
+    res.status(200).json({ message: "Password reset email sent successfully" });
   } catch (error) {
     console.error("Password reset error:", error.message);
     res.status(500).json({ error: "Failed to send password reset email." });
   }
 };
 
-// 📌 Update Password Function
- const updatePassword = async (req, res) => {
+const updatePassword = async (req, res) => {
   try {
     const { resetToken, newPassword } = req.body;
 
@@ -291,7 +279,7 @@ const resetPassword = async (req, res) => {
 
     await prisma.user.update({
       where: { id: decoded.id },
-      data: { password: hashedPassword },
+      data: { password: hashedPassword }
     });
 
     res.status(200).json({ message: "Password updated successfully." });
@@ -301,8 +289,7 @@ const resetPassword = async (req, res) => {
   }
 };
 
-// 📌 OTP Verification Function
- const verifyOTP = async (req, res) => {
+const verifyOTP = async (req, res) => {
   try {
     const { email, otp } = req.body;
 
@@ -316,15 +303,13 @@ const resetPassword = async (req, res) => {
       return res.status(400).json({ error: "Invalid or expired OTP." });
     }
 
-    // ✅ Mark the user as verified
     await prisma.user.update({
       where: { email },
-      data: { isVerified: true, otp: null, otpExpiresAt: null },
+      data: { isVerified: true, otp: null, otpExpiresAt: null }
     });
 
-    // ✅ Generate a new token
     const token = jwt.sign({ id: user.id }, process.env.JWT_SECRET, {
-      expiresIn: "1h",
+      expiresIn: "1h"
     });
 
     res.status(200).json({ message: "Account verified successfully.", token });
@@ -333,6 +318,5 @@ const resetPassword = async (req, res) => {
     res.status(500).json({ error: "Failed to verify OTP." });
   }
 };
-
 
 export { signup, login, resetPassword, updatePassword, verifyOTP };

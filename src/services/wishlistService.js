@@ -12,14 +12,13 @@ export const getWishlistByUser = async (userId) => {
             price: true,
             imageUrl: true,
             colors: true,
-            sizes: {  
+            sizes: {
               include: { size: true }
             }
           }
         }
       }
     });
-    
 
     // console.log("🔍 Wishlist from DB:", wishlist);
     return wishlist;
@@ -39,19 +38,19 @@ export const addToWishlist = async (userId, item) => {
           userId,
           productId: item.productId,
           selectedSize: item.selectedSize || "",
-          selectedColor: item.selectedColor || "",
-        },
+          selectedColor: item.selectedColor || ""
+        }
       },
       create: {
         userId,
         productId: item.productId,
         selectedSize: item.selectedSize || "",
         selectedColor: item.selectedColor || "",
-        quantity: item.quantity || 1,
+        quantity: item.quantity || 1
       },
       update: {
-        quantity: item.quantity || 1,
-      },
+        quantity: item.quantity || 1
+      }
     });
   } catch (error) {
     console.error("🚨 Prisma Wishlist Error:", error);
@@ -63,7 +62,7 @@ export const addToWishlist = async (userId, item) => {
 export const moveToWishlist = async (userId, item) => {
   try {
     await prisma.cartItem.deleteMany({
-      where: { userId, productId: item.productId },
+      where: { userId, productId: item.productId }
     });
 
     return await addToWishlist(userId, item);
@@ -81,8 +80,8 @@ export const removeFromWishlist = async (userId, wishlistId) => {
     const result = await prisma.wishlist.deleteMany({
       where: {
         id: Number(wishlistId),
-        userId: Number(userId),
-      },
+        userId: Number(userId)
+      }
     });
 
     if (result.count === 0) {
@@ -97,4 +96,9 @@ export const removeFromWishlist = async (userId, wishlistId) => {
   }
 };
 
-export default { getWishlistByUser, addToWishlist, moveToWishlist, removeFromWishlist };
+export default {
+  getWishlistByUser,
+  addToWishlist,
+  moveToWishlist,
+  removeFromWishlist
+};

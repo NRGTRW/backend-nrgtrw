@@ -3,7 +3,7 @@ import { upload, uploadProfilePicture } from "../utils/uploadConfig.js";
 
 const router = express.Router();
 
-// ✅ Upload multiple images and return S3 URLs
+// Качване на множество снимки и връщане на S3 URL-ите им
 router.post("/", upload.array("images", 10), async (req, res) => {
   try {
     if (!req.files || req.files.length === 0) {
@@ -16,10 +16,14 @@ router.post("/", upload.array("images", 10), async (req, res) => {
       })
     );
 
-    res.status(200).json({ message: "Upload successful", images: uploadedImages });
+    res
+      .status(200)
+      .json({ message: "Upload successful", images: uploadedImages });
   } catch (error) {
     console.error("❌ Upload failed:", error.message);
-    res.status(500).json({ error: "Failed to upload images", details: error.message });
+    res
+      .status(500)
+      .json({ error: "Failed to upload images", details: error.message });
   }
 });
 

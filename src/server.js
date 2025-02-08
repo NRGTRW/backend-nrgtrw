@@ -8,7 +8,7 @@ dotenv.config();
 
 const prisma = new PrismaClient();
 const app = express();
-app.use(bodyParser.json({ limit: '50mb' }));  // Set a large body size limit to handle big base64 strings
+app.use(bodyParser.json({ limit: "50mb" })); // Set a large body size limit to handle big base64 strings
 
 // Log bucket name for debugging
 console.log("Bucket Name:", process.env.AWS_S3_BUCKET_NAME);
@@ -17,9 +17,9 @@ console.log("Bucket Name:", process.env.AWS_S3_BUCKET_NAME);
 const s3 = new S3Client({
   credentials: {
     accessKeyId: process.env.AWS_ACCESS_KEY_ID,
-    secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
+    secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY
   },
-  region: process.env.AWS_REGION || "eu-central-1",
+  region: process.env.AWS_REGION || "eu-central-1"
 });
 
 const BUCKET_NAME = process.env.AWS_S3_BUCKET_NAME;
@@ -32,7 +32,7 @@ const uploadToS3 = async (fileName, base64Data, mimeType) => {
     Bucket: BUCKET_NAME,
     Key: fileName,
     Body: buffer,
-    ContentType: mimeType,
+    ContentType: mimeType
     // Commented out ACL due to bucket restrictions
   });
 
@@ -47,7 +47,7 @@ const uploadToS3 = async (fileName, base64Data, mimeType) => {
 
 // Endpoint to create product and upload images
 app.post("/create-product", async (req, res) => {
-  const { product } = req.body
+  const { product } = req.body;
 
   // Log the incoming request to check its structure
   console.log("Received Product Data:", req.body);
@@ -61,16 +61,24 @@ app.post("/create-product", async (req, res) => {
     const category = await prisma.category.upsert({
       where: { name: product.category },
       update: {},
-      create: { name: product.category },
+      create: { name: product.category }
     });
 
     // Get image URLs for the product and its colors
     const uploadedImages = await Promise.all([
-      uploadToS3(product.imageUrl.name, product.imageUrl.buffer, product.imageUrl.mimetype),
+      uploadToS3(
+        product.imageUrl.name,
+        product.imageUrl.buffer,
+        product.imageUrl.mimetype
+      ),
       ...product.colors.flatMap((color) => [
         uploadToS3(color.image.name, color.image.buffer, color.image.mimetype),
-        uploadToS3(color.hoverImage.name, color.hoverImage.buffer, color.hoverImage.mimetype),
-      ]),
+        uploadToS3(
+          color.hoverImage.name,
+          color.hoverImage.buffer,
+          color.hoverImage.mimetype
+        )
+      ])
     ]);
 
     const [productImageUrl, ...colorImageUrls] = uploadedImages;
@@ -78,8 +86,8 @@ app.post("/create-product", async (req, res) => {
     // Fixing data structure to ensure imageUrl is a single string, not an array
     const colorData = product.colors.map((color, index) => ({
       colorName: color.colorName || "Default Color",
-      imageUrl: colorImageUrls[index * 2] || fallbackImage,     // Main color image
-      hoverImage: colorImageUrls[index * 2 + 1] || fallbackImage, // Hover image
+      imageUrl: colorImageUrls[index * 2] || fallbackImage, // Main color image
+      hoverImage: colorImageUrls[index * 2 + 1] || fallbackImage // Hover image
     }));
 
     // Handle product image upload
@@ -94,21 +102,21 @@ app.post("/create-product", async (req, res) => {
         category: { connect: { id: category.id } },
         imageUrl: productImageUrl,
         colors: {
-          create: colorData,// Pass the fixed color data structure with single string URLs
+          create: colorData // Pass the fixed color data structure with single string URLs
         },
         sizes: {
           create: product.sizes.map((size) => ({
-            size: { connect: { id: size.id } },
-          })),
+            size: { connect: { id: size.id } }
+          }))
         },
-        updatedAt: new Date(),
-      },
+        updatedAt: new Date()
+      }
     });
 
     res.status(201).json({
       success: true,
       message: "Product created successfully",
-      data: createdProduct,
+      data: createdProduct
     });
   } catch (error) {
     console.error("❌ Error creating product:", error.message);

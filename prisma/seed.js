@@ -1,7 +1,106 @@
-import { PrismaClient, Role } from "@prisma/client";
+// Import from the CommonJS module using default import and destructuring.
+import pkg from '@prisma/client';
+const { PrismaClient, Role } = pkg;
 import bcrypt from "bcrypt";
 import { encrypt } from "../src/utils/cryptoUtils.js";
+import { S3Client, HeadObjectCommand, PutObjectCommand } from "@aws-sdk/client-s3";
+import fs from "fs";
+import path from "path";
+import { fileURLToPath } from "url";
 
+// Set up __dirname in ES modules.
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+// S3 configuration (ensure these environment variables are set).
+const bucketName = process.env.AWS_S3_BUCKET_NAME;
+if (!bucketName) {
+  console.error("AWS_S3_BUCKET_NAME environment variable not set.");
+  process.exit(1);
+}
+
+const s3Client = new S3Client({
+  region: process.env.AWS_REGION,
+  credentials: {
+    accessKeyId: process.env.AWS_ACCESS_KEY_ID,
+    secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
+  },
+});
+
+// Helper: extract the S3 key from a full URL.
+function extractS3Key(url) {
+  const baseUrl = process.env.IMAGE_BASE_URL || "https://example.com/default-images";
+  if (url.startsWith(baseUrl)) {
+    return url.slice(baseUrl.length).replace(/^\/+/, '');
+  } else {
+    const parsedUrl = new URL(url);
+    return parsedUrl.pathname.replace(/^\/+/, '');
+  }
+}
+
+// Check if an object exists in S3.
+async function fileExists(key) {
+  try {
+    await s3Client.send(new HeadObjectCommand({ Bucket: bucketName, Key: key }));
+    return true;
+  } catch (error) {
+    if (error.$metadata && error.$metadata.httpStatusCode === 404) {
+      return false;
+    }
+    throw error;
+  }
+}
+
+// Upload a local file to S3.
+async function uploadFile(key, filePath) {
+  try {
+    const fileContent = await fs.promises.readFile(filePath);
+    await s3Client.send(new PutObjectCommand({
+      Bucket: bucketName,
+      Key: key,
+      Body: fileContent,
+    }));
+    console.log(`Uploaded ${key} to S3.`);
+  } catch (error) {
+    console.error(`Error uploading ${key}:`, error.message);
+  }
+}
+
+// Before seeding, ensure that all image files (from products and their colors) exist in S3.
+async function seedS3Files() {
+  const products = [...eleganceProducts, ...pumpCoverProducts, ...confidenceProducts];
+  const fileUrls = new Set();
+
+  for (const product of products) {
+    if (product.imageUrl) fileUrls.add(product.imageUrl);
+    if (product.colors && Array.isArray(product.colors)) {
+      for (const color of product.colors) {
+        if (color.image) fileUrls.add(color.image);
+        if (color.hoverImage) fileUrls.add(color.hoverImage);
+      }
+    }
+  }
+
+  for (const url of fileUrls) {
+    const key = extractS3Key(url);
+    const localFilePath = path.join(__dirname, "public", key);
+    try {
+      const exists = await fileExists(key);
+      if (!exists) {
+        console.log(`File ${key} not found in S3. Uploading from ${localFilePath}...`);
+        await uploadFile(key, localFilePath);
+      } else {
+        console.log(`File ${key} already exists in S3.`);
+      }
+    } catch (error) {
+      console.error(`Error processing file ${key}:`, error.message);
+    }
+  }
+}
+
+// ------------------------
+// Prisma seeding functions
+// ------------------------
 const prisma = new PrismaClient();
 const fallbackImage = "https://example.com/fallback.jpg";
 
@@ -32,21 +131,20 @@ const seedSizes = async () => {
 
 const seedUsers = async () => {
   try {
-    const hashedPassword = await bcrypt.hash("Nikcho2006", 10);
+    const hashedPassword = await bcrypt.hash("Nikcho", 10);
     const encryptedAddress = encrypt("Lyulin 8, bl.815, vh.A");
     const encryptedPhone = encrypt("0897338635");
 
     await prisma.user.upsert({
-      where: { email: "nrgtrwsales@gmail.com" },
+      where: { email: process.env.EMAIL_USER },
       update: {
-        updatedAt: new Date(),
-        role: Role.ROOT_ADMIN
+        updatedAt: new Date()
       },
       create: {
-        email: "nrgtrwsales@gmail.com",
+        email: process.env.EMAIL_USER,
         password: hashedPassword,
         name: "Nikolay Goranov",
-        role: Role.ROOT_ADMIN,
+        role: Role.ROOT_ADMIN,  // Now seeding with an explicit role.
         address: encryptedAddress,
         phone: encryptedPhone,
         isVerified: true,
@@ -81,15 +179,17 @@ const seedProducts = async (products) => {
     for (const product of products) {
       console.log(`Processing product: ${product.name}`);
 
+      // Upsert the product's category.
       const category = await prisma.category.upsert({
         where: { name: product.category },
         update: {},
         create: { name: product.category }
       });
 
+      // Use product.sizes (if provided) or default to globalSizes.
       const productSizes = product.sizes?.length ? product.sizes : globalSizes;
       const availableSizes = await prisma.size.findMany({
-        where: { size: { in: productSizes.map((s) => s.toString()) } }
+        where: { size: { in: productSizes.map(s => s.toString()) } }
       });
 
       await prisma.product.create({
@@ -97,26 +197,26 @@ const seedProducts = async (products) => {
           name: product.name,
           price: product.price,
           description: product.description,
-          imageUrl: isValidUrl(product.imageUrl)
-            ? product.imageUrl
-            : fallbackImage,
+          imageUrl: isValidUrl(product.imageUrl) ? product.imageUrl : fallbackImage,
           stock: product.stock,
           category: { connect: { id: category.id } },
+          // Create colors using the field "colors" (note: we now also set "position").
           colors: {
             create: product.colors?.map((color, index) => ({
               colorName: color.colorName || "Default Color",
               imageUrl: isValidUrl(color.image) ? color.image : fallbackImage,
-              hoverImage: isValidUrl(color.hoverImage) ? color.hoverImage : fallbackImage,
-              position: index,
+              hoverImage: (color.hoverImage && isValidUrl(color.hoverImage))
+                         ? color.hoverImage
+                         : fallbackImage,
+              position: index  // Explicitly setting the position (index) for each color.
             })) || []
           },
-          
+          // Create ProductSize entries using the field "sizes".
           sizes: {
-            create: availableSizes.map((size) => ({
+            create: availableSizes.map(size => ({
               size: { connect: { id: size.id } }
             }))
-          },
-          updatedAt: new Date()
+          }
         }
       });
 
@@ -128,30 +228,6 @@ const seedProducts = async (products) => {
   }
 };
 
-const main = async () => {
-  console.log("🌱 Seeding database...");
-  await seedSizes();
-  await seedUsers();
-  await seedCategories();
-
-  const products = [
-    ...eleganceProducts,
-    ...pumpCoverProducts,
-    ...confidenceProducts
-  ];
-  await seedProducts(products);
-
-  console.log("🌱 Seeding completed!");
-};
-
-main()
-  .catch((error) => {
-    console.error("❌ Unexpected error during seeding:", error.message);
-    process.exit(1);
-  })
-  .finally(async () => {
-    await prisma.$disconnect();
-  });
 
 const BASE_URL =
   process.env.IMAGE_BASE_URL || "https://example.com/default-images";
@@ -435,3 +511,34 @@ const pumpCoverProducts = [
   }
 ];
 const confidenceProducts = [];
+
+
+const main = async () => {
+  console.log("🌱 Seeding database...");
+
+  // First, ensure that all image files are in S3.
+  await seedS3Files();
+  // Seed sizes, users, and categories.
+  await seedSizes();
+  await seedUsers();
+  await seedCategories();
+
+  // Combine and seed products.
+  const products = [
+    ...eleganceProducts,
+    ...pumpCoverProducts,
+    ...confidenceProducts
+  ];
+  await seedProducts(products);
+
+  console.log("🌱 Seeding completed!");
+};
+
+main()
+  .catch((error) => {
+    console.error("❌ Unexpected error during seeding:", error.message);
+    process.exit(1);
+  })
+  .finally(async () => {
+    await prisma.$disconnect();
+  });

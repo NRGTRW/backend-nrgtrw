@@ -46,6 +46,7 @@
     "multer": "^1.4.5-lts.1",
     "nodemailer": "^6.9.16",
     "openssl": "^2.0.0",
+    "stripe": "^17.6.0",
     "swr": "^2.3.0",
     "uuid": "^11.0.5",
     "version": "^0.1.2",

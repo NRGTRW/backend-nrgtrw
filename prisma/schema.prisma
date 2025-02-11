@@ -13,36 +13,43 @@ enum Role {
   ROOT_ADMIN
 }
 
+enum PaymentStatus {
+  PENDING
+  COMPLETED
+  FAILED
+}
+
 model User {
-  id             Int      @id @default(autoincrement())
-  email          String   @unique
+  id             Int        @id @default(autoincrement())
+  email          String     @unique
   password       String
   name           String
-  role           Role     @default(USER)
+  role           Role       @default(USER)
   address        String?
   phone          String?
-  profilePicture String?  @db.VarChar(512)
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
-  isVerified     Boolean  @default(false)
+  profilePicture String?    @db.VarChar(512)
+  createdAt      DateTime   @default(now())
+  updatedAt      DateTime   @updatedAt
+  isVerified     Boolean    @default(false)
   otp            Int?
   otpExpiresAt   DateTime?
   cartItems      CartItem[]
   orders         Order[]
   wishlist       Wishlist[]
+  payments       Payment[] // <-- relation to payments
 }
 
 model Product {
-  id          Int          @id @default(autoincrement())
+  id          Int           @id @default(autoincrement())
   name        String
   price       Float
-  description String       @db.Text
-  imageUrl    String?      @db.Text
-  createdAt   DateTime     @default(now())
-  updatedAt   DateTime     @updatedAt
+  description String        @db.Text
+  imageUrl    String?       @db.Text
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
   categoryId  Int?
   stock       Int
-  category    Category?    @relation(fields: [categoryId], references: [id])
+  category    Category?     @relation(fields: [categoryId], references: [id])
   colors      Color[]
   sizes       ProductSize[]
   wishlist    Wishlist[]
@@ -59,17 +66,17 @@ model Category {
 }
 
 model Size {
-  id   Int    @id @default(autoincrement())
-  size String @unique
+  id       Int           @id @default(autoincrement())
+  size     String        @unique
   products ProductSize[]
 }
 
 model Color {
   id         Int     @id @default(autoincrement())
   colorName  String
-  imageUrl   String    @db.Text
-  hoverImage String?   @db.Text
-  position   Int       @default(0)
+  imageUrl   String  @db.Text
+  hoverImage String? @db.Text
+  position   Int     @default(0)
   productId  Int
   product    Product @relation(fields: [productId], references: [id], onDelete: Cascade, map: "Color_productId_fkey")
 
@@ -103,12 +110,15 @@ model CartItem {
 }
 
 model Order {
-  id        Int         @id @default(autoincrement())
-  userId    Int
-  createdAt DateTime    @default(now())
-  updatedAt DateTime    @updatedAt
-  user      User        @relation(fields: [userId], references: [id], onDelete: Cascade, map: "Order_userId_fkey")
+  id         Int         @id @default(autoincrement())
+  userId     Int
+  createdAt  DateTime    @default(now())
+  updatedAt  DateTime    @updatedAt
+  user       User        @relation(fields: [userId], references: [id], onDelete: Cascade, map: "Order_userId_fkey")
   orderItems OrderItem[]
+
+  // Inverse relation for Payment (one-to-one, optional)
+  payment Payment? @relation("OrderPayment")
 
   @@index([userId], map: "Order_userId_fkey")
 }
@@ -135,4 +145,21 @@ model ProductSize {
   @@unique([productId, sizeId], map: "ProductSize_productId_sizeId_key")
   @@index([productId], map: "ProductSize_productId_fkey")
   @@index([sizeId], map: "ProductSize_sizeId_fkey")
+}
+
+// New Payment model to store Stripe payment details
+model Payment {
+  id              Int           @id @default(autoincrement())
+  orderId         Int?          @unique
+  userId          Int
+  stripeSessionId String        @unique
+  amount          Float
+  status          PaymentStatus @default(PENDING)
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  user User @relation(fields: [userId], references: [id])
+
+  // Specify the relation name to match the inverse field in Order.
+  order Order? @relation("OrderPayment", fields: [orderId], references: [id])
 }

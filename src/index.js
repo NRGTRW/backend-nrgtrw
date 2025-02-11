@@ -17,7 +17,7 @@ import categoriesRoutes from "./routes/categoriesRoutes.js";
 import checkoutRoutes from "./routes/checkoutRoutes.js";
 import { PrismaClient } from "@prisma/client";
 
-dotenv.config();
+dotenv.config(); 
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);

@@ -7,18 +7,23 @@ dotenv.config();
 
 const router = express.Router();
 const prisma = new PrismaClient();
-// Initialize Stripe with the secret key from the environment
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
+
+// Initialize Stripe using only the secret key (ensure STRIPE_SECRET_KEY contains only the secret key)
+const stripeSecretKey = process.env.STRIPE_SECRET_KEY;
+if (!stripeSecretKey) {
+  console.error("Missing STRIPE_SECRET_KEY in environment variables.");
+}
+const stripe = new Stripe(stripeSecretKey, {
   apiVersion: "2022-11-15",
 });
 
-// Use the first URL from the CLIENT_URL environment variable in case it is a comma-separated list
-const clientUrl = process.env.CLIENT_URL.split(",")[0];
+// Use the first URL from CLIENT_URL (if it's comma-separated)
+const clientUrl = process.env.CLIENT_URL ? process.env.CLIENT_URL.split(",")[0].trim() : "";
 
 /**
  * POST /api/checkout/create-checkout-session
  * Expects a JSON body with:
- *   - userId: Number (you can also retrieve this from an auth middleware)
+ *   - userId: Number (or you may retrieve it via authentication middleware)
  *   - items: Array of items, each with { productId, quantity }
  */
 router.post("/create-checkout-session", async (req, res) => {
@@ -28,30 +33,32 @@ router.post("/create-checkout-session", async (req, res) => {
       return res.status(400).json({ error: "Missing required fields" });
     }
 
-    // Build Stripe line items from your products.
+    // Build Stripe line items by fetching product details from the database.
     const line_items = [];
     for (const item of items) {
       const product = await prisma.product.findUnique({
         where: { id: item.productId },
       });
       if (!product) {
-        return res.status(404).json({ error: `Product not found: ${item.productId}` });
+        return res
+          .status(404)
+          .json({ error: `Product not found: ${item.productId}` });
       }
       line_items.push({
         price_data: {
-          currency: "usd", // Change as needed
+          currency: "usd", // Adjust as needed.
           product_data: {
             name: product.name,
             images: product.imageUrl ? [product.imageUrl] : [],
             description: product.description,
           },
-          unit_amount: Math.round(product.price * 100), // Stripe expects the amount in cents
+          unit_amount: Math.round(product.price * 100), // Convert dollars to cents.
         },
         quantity: item.quantity,
       });
     }
 
-    // Create the Stripe Checkout session
+    // Create the Stripe Checkout session.
     const session = await stripe.checkout.sessions.create({
       payment_method_types: ["card"],
       line_items,
@@ -61,7 +68,7 @@ router.post("/create-checkout-session", async (req, res) => {
       metadata: { userId: userId.toString() },
     });
 
-    // (Optional) Create an Order record with order items in your DB.
+    // (Optional) Create an Order record with order items in your database.
     const order = await prisma.order.create({
       data: {
         userId: userId,
@@ -74,17 +81,22 @@ router.post("/create-checkout-session", async (req, res) => {
       },
     });
 
-    // Create a Payment record to track the payment status.
+    // (Optional) Create a Payment record to track the payment status.
     await prisma.payment.create({
       data: {
         orderId: order.id,
         userId: userId,
         stripeSessionId: session.id,
-        amount: line_items.reduce((acc, item) => acc + item.price_data.unit_amount * item.quantity, 0) / 100,
+        amount:
+          line_items.reduce(
+            (acc, item) => acc + item.price_data.unit_amount * item.quantity,
+            0
+          ) / 100,
         status: "PENDING",
       },
     });
 
+    console.log("Stripe session created successfully:", session.id);
     res.json({ sessionId: session.id });
   } catch (error) {
     console.error("Error creating checkout session:", error);
@@ -94,10 +106,10 @@ router.post("/create-checkout-session", async (req, res) => {
 
 /**
  * POST /api/checkout/webhook
- * This endpoint listens for Stripe webhook events (e.g. checkout.session.completed)
+ * This endpoint listens for Stripe webhook events (e.g., checkout.session.completed)
  *
  * IMPORTANT:
- * - You must configure the endpoint URL in your Stripe Dashboard.
+ * - Configure the endpoint URL in your Stripe Dashboard.
  * - The raw body is needed to verify the webhook signature.
  */
 router.post(
@@ -106,7 +118,6 @@ router.post(
   (req, res) => {
     const sig = req.headers["stripe-signature"];
     let event;
-
     try {
       event = stripe.webhooks.constructEvent(
         req.body,
@@ -118,7 +129,7 @@ router.post(
       return res.status(400).send(`Webhook Error: ${err.message}`);
     }
 
-    // Handle the checkout.session.completed event
+    // Handle the checkout.session.completed event.
     if (event.type === "checkout.session.completed") {
       const session = event.data.object;
       (async () => {

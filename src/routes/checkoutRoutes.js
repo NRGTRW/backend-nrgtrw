@@ -1,4 +1,3 @@
-// routes/checkoutRoutes.js
 import express from "express";
 import Stripe from "stripe";
 import { PrismaClient } from "@prisma/client";
@@ -8,9 +7,13 @@ dotenv.config();
 
 const router = express.Router();
 const prisma = new PrismaClient();
+// Initialize Stripe with the secret key from the environment
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
-  apiVersion: "2022-11-15", // Use your desired API version
+  apiVersion: "2022-11-15",
 });
+
+// Use the first URL from the CLIENT_URL environment variable in case it is a comma-separated list
+const clientUrl = process.env.CLIENT_URL.split(",")[0];
 
 /**
  * POST /api/checkout/create-checkout-session
@@ -32,9 +35,7 @@ router.post("/create-checkout-session", async (req, res) => {
         where: { id: item.productId },
       });
       if (!product) {
-        return res
-          .status(404)
-          .json({ error: `Product not found: ${item.productId}` });
+        return res.status(404).json({ error: `Product not found: ${item.productId}` });
       }
       line_items.push({
         price_data: {
@@ -55,9 +56,8 @@ router.post("/create-checkout-session", async (req, res) => {
       payment_method_types: ["card"],
       line_items,
       mode: "payment",
-      // On success or cancel, redirect the customer back to your frontend.
-      success_url: `${process.env.CLIENT_URL}/checkout-success?session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${process.env.CLIENT_URL}/checkout-cancelled`,
+      success_url: `${clientUrl}/checkout-success?session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: `${clientUrl}/checkout-cancelled`,
       metadata: { userId: userId.toString() },
     });
 
@@ -80,11 +80,7 @@ router.post("/create-checkout-session", async (req, res) => {
         orderId: order.id,
         userId: userId,
         stripeSessionId: session.id,
-        amount: line_items.reduce(
-          (acc, item) =>
-            acc + item.price_data.unit_amount * item.quantity,
-          0
-        ) / 100,
+        amount: line_items.reduce((acc, item) => acc + item.price_data.unit_amount * item.quantity, 0) / 100,
         status: "PENDING",
       },
     });

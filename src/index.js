@@ -17,7 +17,7 @@ import categoriesRoutes from "./routes/categoriesRoutes.js";
 import checkoutRoutes from "./routes/checkoutRoutes.js";
 import { PrismaClient } from "@prisma/client";
 
-dotenv.config(); 
+dotenv.config();
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -44,12 +44,7 @@ app.use(
       }
     },
     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-    allowedHeaders: [
-      "Content-Type",
-      "Authorization",
-      "x-access-token",
-      "Cache-Control"
-    ],
+    allowedHeaders: ["Content-Type", "Authorization", "x-access-token", "Cache-Control"],
     credentials: true
   })
 );
@@ -112,6 +107,7 @@ app.use("/api/wishlist", wishlistRoutes);
 app.use("/api", adminRoutes);
 app.use("/api/upload", uploadRoutes);
 app.use("/api/categories", categoriesRoutes);
+// Mount checkout routes at /api/checkout
 app.use("/api/checkout", checkoutRoutes);
 
 // Test Database Route
@@ -138,5 +134,5 @@ app.use(errorMiddleware);
 // Server Listener
 const PORT = process.env.PORT || 8088;
 app.listen(PORT, () => {
-  console.log(`[${new Date().toISOString()}] Server running  on port ${PORT}`);
+  console.log(`[${new Date().toISOString()}] Server running on port ${PORT}`);
 });

@@ -177,37 +177,61 @@ router.put(
   async (req, res) => {
     const { id } = req.params;
     try {
-      let { name, description, price, categoryId, colors } = req.body;
+      // Extract separate fields for English and Bulgarian translations.
+      let { enName, enDescription, bgName, bgDescription, price, categoryId, colors } = req.body;
       if (typeof colors === "string") colors = JSON.parse(colors);
 
       // Begin transaction for updating product and translations.
       await prisma.$transaction(async (tx) => {
+        // Update only the fields that belong to the Product model.
         await tx.product.update({
           where: { id: Number(id) },
           data: {
-            name,
-            description,
             price: parseFloat(price),
             categoryId: Number(categoryId),
           },
         });
 
-        // Update (or create if missing) translations for both languages.
         const fallbackMain = "temp-main-image";
+
+        // Update English translation if provided.
         await tx.productTranslation.upsert({
           where: { productId_language: { productId: Number(id), language: "en" } },
-          update: { name, description },
-          create: { productId: Number(id), language: "en", name, description, imageUrl: fallbackMain },
+          update: {
+            // Only update if new values are provided (you could also decide to override)
+            ...(enName ? { name: enName } : {}),
+            ...(enDescription ? { description: enDescription } : {}),
+          },
+          create: {
+            productId: Number(id),
+            language: "en",
+            name: enName,
+            description: enDescription,
+            imageUrl: fallbackMain,
+          },
         });
+
+        // Update Bulgarian translation if provided.
         await tx.productTranslation.upsert({
           where: { productId_language: { productId: Number(id), language: "bg" } },
-          update: { name, description },
-          create: { productId: Number(id), language: "bg", name, description, imageUrl: fallbackMain },
+          update: {
+            ...(bgName ? { name: bgName } : {}),
+            ...(bgDescription ? { description: bgDescription } : {}),
+          },
+          create: {
+            productId: Number(id),
+            language: "bg",
+            name: bgName,
+            description: bgDescription,
+            imageUrl: fallbackMain,
+          },
         });
 
         // Update colors: delete removed colors and update/create as needed.
         if (colors && Array.isArray(colors)) {
-          const updatedColorIds = colors.filter(color => color.id).map(color => Number(color.id));
+          const updatedColorIds = colors
+            .filter((color) => color.id)
+            .map((color) => Number(color.id));
           await tx.color.deleteMany({
             where: {
               productId: Number(id),
@@ -242,10 +266,10 @@ router.put(
       // Process file uploads for images.
       const files = req.files || [];
       const updatePromises = [];
-      const mainImageFile = files.find(file => file.fieldname === "mainImage");
+      const mainImageFile = files.find((file) => file.fieldname === "mainImage");
       if (mainImageFile) {
         updatePromises.push(
-          uploadFileToS3(mainImageFile, "products").then(url =>
+          uploadFileToS3(mainImageFile, "products").then((url) =>
             prisma.product.update({
               where: { id: Number(id) },
               data: { imageUrl: url },
@@ -254,14 +278,14 @@ router.put(
         );
       }
       // For each file field starting with "colorImage_" or "colorHoverImage_"
-      files.forEach(file => {
+      files.forEach((file) => {
         if (file.fieldname.startsWith("colorImage_")) {
           const parts = file.fieldname.split("_");
           if (parts.length < 2) return;
           const colorId = Number(parts[1]);
           if (!colorId) return;
           updatePromises.push(
-            uploadFileToS3(file, "colors").then(url =>
+            uploadFileToS3(file, "colors").then((url) =>
               prisma.color.update({
                 where: { id: colorId },
                 data: { imageUrl: url },
@@ -275,7 +299,7 @@ router.put(
           const colorId = Number(parts[1]);
           if (!colorId) return;
           updatePromises.push(
-            uploadFileToS3(file, "colors").then(url =>
+            uploadFileToS3(file, "colors").then((url) =>
               prisma.color.update({
                 where: { id: colorId },
                 data: { hoverImage: url },
@@ -303,6 +327,7 @@ router.put(
     }
   }
 );
+
 
 // DELETE Product (Admin Only)
 router.delete(

@@ -13,15 +13,21 @@ export const getCart = async (req, res) => {
           return null;
         }
 
+        // Extract translation for the desired language (e.g., "en")
+        const translation =
+          item.product.translations.find((t) => t.language === "en") ||
+          (item.product.translations.length > 0 && item.product.translations[0]) ||
+          {};
+
         return {
           cartItemId: item.id,
           productId: item.productId,
           selectedSize: item.selectedSize,
           selectedColor: item.selectedColor,
           quantity: item.quantity,
-          name: item.product.name,
+          name: translation.name || "No name",
           price: item.product.price,
-          imageUrl: item.product.imageUrl
+          imageUrl: translation.imageUrl || ""
         };
       })
       .filter(Boolean);
@@ -37,11 +43,11 @@ export const addToCart = async (req, res) => {
   console.log("📥 Incoming Add to Cart Request:", req.body);
 
   const userId = req.user?.id;
-  const { productId, name, price, selectedSize, selectedColor, quantity } =
-    req.body;
+  // Remove price from required fields since it's not stored in CartItem.
+  const { productId, name, selectedSize, selectedColor, quantity } = req.body;
 
-  if (!productId || !name || !price || !quantity) {
-    console.error("❌ Missing fields:", { productId, name, price, quantity });
+  if (!productId || !name || !quantity) {
+    console.error("❌ Missing fields:", { productId, name, quantity });
     return res.status(400).json({ message: "Missing required fields." });
   }
 
@@ -50,7 +56,6 @@ export const addToCart = async (req, res) => {
     const newCartItem = await cartService.addToCart(userId, {
       productId,
       name,
-      price,
       selectedSize: selectedSize || null,
       selectedColor: selectedColor || null,
       quantity
@@ -75,7 +80,7 @@ export const removeFromCart = async (req, res) => {
     }
 
     await cartService.removeFromCart(userId, cartItemId);
-    res.status(200).json({ message: "" });
+    res.status(200).json({ message: "Item removed from cart." });
   } catch (error) {
     console.error("[CART] Delete error:", error);
 

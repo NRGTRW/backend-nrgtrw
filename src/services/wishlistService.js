@@ -1,32 +1,33 @@
 import prisma from "../../prisma/lib/prisma.js";
 
 // Fetch the wishlist for a given user (including product details)
-export const getWishlistByUser = async (userId) => {
+export async function getWishlistByUser(userId) {
   try {
-    const wishlist = await prisma.wishlist.findMany({
+    const wishlistItems = await prisma.wishlist.findMany({
       where: { userId },
       include: {
         product: {
           select: {
-            name: true,
+            id: true,
             price: true,
-            imageUrl: true,
+            stock: true,
             colors: true,
             sizes: {
-              include: { size: true }
-            }
-          }
-        }
-      }
+              include: {
+                size: true,
+              },
+            },
+            translations: true, // Include translations to get product name and imageUrl
+          },
+        },
+      },
     });
-
-    // console.log("🔍 Wishlist from DB:", wishlist);
-    return wishlist;
+    return wishlistItems;
   } catch (error) {
-    console.error("[DB] Error fetching wishlist:", error);
-    throw new Error("Database error while fetching wishlist.");
+    console.error('Error fetching wishlist:', error);
+    throw new Error('Database error while fetching wishlist.');
   }
-};
+}
 
 export const addToWishlist = async (userId, item) => {
   try {

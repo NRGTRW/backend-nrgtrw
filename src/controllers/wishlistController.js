@@ -5,6 +5,7 @@ export const getWishlist = async (req, res) => {
     const userId = req.user?.id;
     const wishlistItems = await wishlistService.getWishlistByUser(userId);
 
+    // Format each wishlist item to include the full translations array.
     const formattedWishlist = wishlistItems.map((item) => ({
       id: item.id,
       productId: item.productId,
@@ -12,9 +13,8 @@ export const getWishlist = async (req, res) => {
       selectedColor: item.selectedColor,
       quantity: item.quantity,
       product: {
-        name: item.product?.name,
+        translations: item.product?.translations, // now provided so the client can pick the right language
         price: item.product?.price,
-        imageUrl: item.product?.imageUrl,
         colors: item.product?.colors
       }
     }));

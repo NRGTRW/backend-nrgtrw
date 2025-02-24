@@ -107,7 +107,6 @@ app.use("/api/wishlist", wishlistRoutes);
 app.use("/api", adminRoutes);
 app.use("/api/upload", uploadRoutes);
 app.use("/api/categories", categoriesRoutes);
-// Mount checkout routes at /api/checkout
 app.use("/api/checkout", checkoutRoutes);
 
 // Test Database Route
@@ -130,6 +129,43 @@ app.use((req, res) => {
 
 // Global Error Handler
 app.use(errorMiddleware);
+
+// hCaptcha API Call with Exponential Backoff
+async function fetchWithExponentialBackoff(url, maxRetries = 5) {
+  let retries = 0;
+  const initialDelay = 1000; // Start with a 1-second delay
+
+  while (retries < maxRetries) {
+    try {
+      const response = await fetch(url);
+      if (response.ok) {
+        return response.json();
+      } else if (response.status === 429) {
+        const delay = Math.min(initialDelay * (2 ** retries), 30000); // Max delay of 30 seconds
+        console.warn(`Rate limited. Retrying in ${delay / 1000} seconds...`);
+        await new Promise(resolve => setTimeout(resolve, delay));
+        retries++;
+      } else {
+        throw new Error(`Unexpected status code: ${response.status}`);
+      }
+    } catch (error) {
+      console.error(`Request failed: ${error.message}`);
+      retries++;
+    }
+  }
+
+  throw new Error('Max retries exceeded');
+}
+
+// Example Usage of hCaptcha API Call
+app.get("/api/hcaptcha", async (req, res) => {
+  try {
+    const captchaData = await fetchWithExponentialBackoff('https://api.hcaptcha.com/getcaptcha/463b917e-e264-403f-ad34-34af0ee10294');
+    res.json({ success: true, data: captchaData });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
 
 // Server Listener
 const PORT = process.env.PORT || 8088;

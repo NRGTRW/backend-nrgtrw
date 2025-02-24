@@ -42,23 +42,53 @@ router.post("/create-checkout-session", async (req, res) => {
       return res.status(400).json({ error: "Missing required fields" });
     }
 
-    // Build Stripe line items by fetching product details from the database.
+    // Build Stripe line items by fetching product details including translations.
     const line_items = [];
     for (const item of items) {
       const product = await prisma.product.findUnique({
         where: { id: item.productId },
+        include: { translations: true },
       });
-      if (!product) {
-        console.error(`Product not found for id: ${item.productId}`);
-        return res.status(404).json({ error: `Product not found: ${item.productId}` });
+      if (!product || !product.translations || product.translations.length === 0) {
+        console.error(`No translations found for product id: ${item.productId}`);
+        return res
+          .status(404)
+          .json({ error: `Product translation not found: ${item.productId}` });
       }
+      // Look for an English translation.
+      let translation = product.translations.find((t) => t.language === "en");
+      if (!translation) {
+        console.warn(
+          `No English translation for product id: ${item.productId}. Falling back to defaults.`
+        );
+        translation = {
+          name: product.translations[0].name, // Fallback to first available translation
+          description: "Description not available in English.",
+          imageUrl: "images/default.png", // Fallback relative path
+        };
+      }
+
+      // Determine the image URL.
+      let imageUrl = translation.imageUrl;
+      const s3BaseUrl = "https://nrgtrw-images.s3.eu-central-1.amazonaws.com/";
+      // If the imageUrl doesn't start with "http", assume it's relative and prepend the S3 base URL.
+      if (imageUrl && !imageUrl.startsWith("http")) {
+        imageUrl = `${s3BaseUrl}${imageUrl.startsWith("/") ? imageUrl.slice(1) : imageUrl}`;
+      }
+
+      // Override with the correct URL if the current URL is not what you expect.
+      // For example, if the image URL contains "WhiteShirt", switch it to your desired image.
+      if (imageUrl.includes("WhiteShirt")) {
+        imageUrl = "https://nrgtrw-images.s3.eu-central-1.amazonaws.com/images/WhiteCroppedTurtuleneck.webp";
+      }
+
       line_items.push({
         price_data: {
-          currency: "usd", // Adjust as needed.
+          currency: "usd",
           product_data: {
-            name: product.name,
-            images: product.imageUrl ? [product.imageUrl] : [],
-            description: product.description,
+            name: translation.name,
+            images: imageUrl ? [imageUrl] : [],
+            description: translation.description,
           },
           unit_amount: Math.round(product.price * 100), // Convert dollars to cents.
         },
@@ -93,7 +123,7 @@ router.post("/create-checkout-session", async (req, res) => {
     });
     console.log("Order created with id:", order.id);
 
-    // If the Payment model exists, create a Payment record.
+    // Create a Payment record to track the payment status.
     if (prisma.payment) {
       await prisma.payment.create({
         data: {
@@ -122,10 +152,6 @@ router.post("/create-checkout-session", async (req, res) => {
 /**
  * POST /api/checkout/webhook
  * Listens for Stripe webhook events (e.g., checkout.session.completed)
- *
- * IMPORTANT:
- * - Configure the endpoint URL in your Stripe Dashboard.
- * - The raw body is needed to verify the webhook signature.
  */
 router.post(
   "/webhook",

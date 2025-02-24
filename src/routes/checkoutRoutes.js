@@ -8,25 +8,29 @@ dotenv.config();
 const router = express.Router();
 const prisma = new PrismaClient();
 
-// Initialize Stripe using only the secret key
+// Initialize Stripe using the secret key
 const stripeSecretKey = process.env.STRIPE_SECRET_KEY;
 if (!stripeSecretKey) {
   console.error("Missing STRIPE_SECRET_KEY in environment variables.");
+  process.exit(1);
 }
 const stripe = new Stripe(stripeSecretKey, {
   apiVersion: "2022-11-15",
 });
 
 // Use the first URL from CLIENT_URL (if it's comma-separated)
-const clientUrl = process.env.CLIENT_URL ? process.env.CLIENT_URL.split(",")[0].trim() : "";
+const clientUrl = process.env.CLIENT_URL
+  ? process.env.CLIENT_URL.split(",")[0].trim()
+  : "";
 if (!clientUrl) {
   console.error("Missing CLIENT_URL in environment variables.");
+  process.exit(1);
 }
 
 /**
  * POST /api/checkout/create-checkout-session
  * Expects a JSON body with:
- *   - userId: Number (or via authentication middleware)
+ *   - userId: Number (or provided via auth middleware)
  *   - items: Array of items, each with { productId, quantity }
  */
 router.post("/create-checkout-session", async (req, res) => {
@@ -64,12 +68,6 @@ router.post("/create-checkout-session", async (req, res) => {
     console.log("Constructed line items:", line_items);
     console.log("Using clientUrl:", clientUrl);
 
-    // Ensure that stripe.checkout.sessions exists.
-    if (!stripe.checkout || !stripe.checkout.sessions) {
-      console.error("stripe.checkout.sessions is undefined. Please update your Stripe package.");
-      return res.status(500).json({ error: "Stripe checkout sessions not available" });
-    }
-
     // Create the Stripe Checkout session.
     const session = await stripe.checkout.sessions.create({
       payment_method_types: ["card"],
@@ -81,7 +79,7 @@ router.post("/create-checkout-session", async (req, res) => {
     });
     console.log("Stripe session created successfully:", session.id);
 
-    // (Optional) Create an Order record with order items in your database.
+    // Create an Order record with order items in your database.
     const order = await prisma.order.create({
       data: {
         userId: userId,
@@ -95,27 +93,24 @@ router.post("/create-checkout-session", async (req, res) => {
     });
     console.log("Order created with id:", order.id);
 
-    // Debug: Log if prisma.payment is defined.
-    if (!prisma.payment) {
-      console.error("prisma.payment is undefined! Ensure your Payment model exists and run `npx prisma generate`.");
+    // If the Payment model exists, create a Payment record.
+    if (prisma.payment) {
+      await prisma.payment.create({
+        data: {
+          orderId: order.id,
+          userId: userId,
+          stripeSessionId: session.id,
+          amount: line_items.reduce(
+            (acc, item) => acc + item.price_data.unit_amount * item.quantity,
+            0
+          ) / 100,
+          status: "PENDING",
+        },
+      });
+      console.log("Payment record created for session:", session.id);
     } else {
-      console.log("prisma.payment is available.");
+      console.warn("Payment model not defined in Prisma schema. Skipping payment record creation.");
     }
-
-    // (Optional) Create a Payment record to track the payment status.
-    await prisma.payment.create({
-      data: {
-        orderId: order.id,
-        userId: userId,
-        stripeSessionId: session.id,
-        amount: line_items.reduce(
-          (acc, item) => acc + item.price_data.unit_amount * item.quantity,
-          0
-        ) / 100,
-        status: "PENDING",
-      },
-    });
-    console.log("Payment record created for session:", session.id);
 
     res.json({ sessionId: session.id });
   } catch (error) {

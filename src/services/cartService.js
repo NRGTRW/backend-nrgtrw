@@ -3,7 +3,7 @@ const prisma = new PrismaClient(); // ✅ Ensure a new instance is created
 
 /**
  * Fetches all cart items for a specific user,
- * including relevant product fields (name, price, imageUrl, etc.).
+ * including relevant product fields via translations.
  */
 export const getCartByUser = async (userId) => {
   try {
@@ -12,16 +12,16 @@ export const getCartByUser = async (userId) => {
       include: {
         product: {
           select: {
-            name: true,
-            price: true,
-            imageUrl: true,
+            price: true, // Price is directly on the Product model
+            stock: true,
             colors: true,
             sizes: {
-              // ✅ Use "sizes" (Correct relation)
               include: {
                 size: true // Include the related size model
               }
-            }
+            },
+            // Include translations to extract product name and imageUrl
+            translations: true
           }
         }
       }
@@ -70,6 +70,7 @@ export const addToCart = async (userId, item) => {
       data: {
         userId,
         productId: item.productId,
+        name: item.name, // Store the product name in the cart item
         selectedSize: item.selectedSize || null,
         selectedColor: item.selectedColor || null,
         quantity: item.quantity || 1

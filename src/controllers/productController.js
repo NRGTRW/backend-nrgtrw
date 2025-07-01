@@ -1,52 +1,76 @@
 import { PrismaClient } from "@prisma/client";
-import {
-  S3Client,
-  DeleteObjectCommand
-} from "@aws-sdk/client-s3";
+import { S3Client, DeleteObjectCommand } from "@aws-sdk/client-s3";
 
 const prisma = new PrismaClient();
 
 const s3 = new S3Client({
   credentials: {
     accessKeyId: process.env.AWS_ACCESS_KEY_ID,
-    secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY
+    secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
   },
-  region: process.env.AWS_REGION || "eu-central-1"
+  region: process.env.AWS_REGION || "eu-central-1",
 });
 
 export const createProduct = async (req, res) => {
-  const { name, description, price, stock, categoryId, sizes, colors } =
-    req.body;
+  const {
+    enName,
+    enDescription,
+    bgName,
+    bgDescription,
+    price,
+    stock,
+    categoryId,
+    sizes,
+    colors,
+  } = req.body;
 
   const imagePaths = [];
-  req.files.forEach((file) => {
+  (req.files || []).forEach((file) => {
     imagePaths.push(file.path);
   });
 
   const colorData = colors.map((color, index) => ({
     colorName: color.colorName,
-    imageUrl: imagePaths[index * 2],
-    hoverImage: imagePaths[index * 2 + 1]
+    imageUrl: imagePaths[index * 2] || "temp-color-image",
+    hoverImage: imagePaths[index * 2 + 1] || "temp-hover-image",
   }));
+
+  const fallbackMain = imagePaths[0] || "temp-main-image";
 
   const createdProduct = await prisma.product.create({
     data: {
-      name,
-      description,
-      price,
+      price: parseFloat(price),
       stock,
-      categoryId,
-      images: imagePaths,
+      category: { connect: { id: Number(categoryId) } },
       sizes: {
-        create: sizes.map((sizeId) => ({ size: { connect: { id: sizeId } } }))
+        create: sizes.map((sizeId) => ({
+          size: { connect: { id: sizeId } },
+        })),
       },
-      colors: { create: colorData }
-    }
+      colors: { create: colorData },
+      translations: {
+        create: [
+          {
+            language: "en",
+            name: enName,
+            description: enDescription,
+            imageUrl: fallbackMain,
+          },
+          {
+            language: "bg",
+            name: bgName,
+            description: bgDescription,
+            imageUrl: fallbackMain,
+          },
+        ],
+      },
+    },
   });
 
-  res
-    .status(201)
-    .json({ message: "Product created successfully", data: createdProduct });
+  res.status(201).json({
+    message: "Product created successfully",
+    data: createdProduct,
+  });
 };
 
 export const getAllProducts = async (req, res) => {
@@ -54,12 +78,10 @@ export const getAllProducts = async (req, res) => {
     console.log("Fetching products from the database...");
     const products = await prisma.product.findMany({
       include: {
-        sizes: {
-          include: { size: true }
-        },
+        sizes: { include: { size: true } },
         colors: true,
-        category: true
-      }
+        category: true,
+      },
     });
     console.log("✅ Products fetched:", products);
     res.status(200).json(products);
@@ -75,19 +97,17 @@ export const getProductById = async (req, res) => {
     const product = await prisma.product.findUnique({
       where: { id: parseInt(id, 10) },
       include: {
-        sizes: {
-          include: { size: true }
-        },
+        sizes: { include: { size: true } },
         colors: true,
-        category: true
-      }
+        category: true,
+      },
     });
     if (!product) {
       return res.status(404).json({ error: "Product not found" });
     }
     const formattedProduct = {
       ...product,
-      sizes: product.sizes.map((ps) => ps.size)
+      sizes: product.sizes.map((ps) => ps.size),
     };
 
     return res.status(200).json(formattedProduct);
@@ -101,29 +121,26 @@ export const getProductById = async (req, res) => {
 
 export const deleteProduct = async (req, res) => {
   const { id } = req.params;
-
   try {
     const productId = parseInt(id, 10);
     console.log(`Received DELETE request for product with ID: ${productId}`);
 
     const product = await prisma.product.findUnique({
-      where: { id: productId }
+      where: { id: productId },
     });
 
     if (!product) {
       console.log(`Product with ID ${productId} not found.`);
       return res.status(404).json({ error: "Product not found" });
     }
-
     console.log(`Product found for deletion:`, product);
 
     const imagesToDelete =
       product.images && Array.isArray(product.images)
         ? product.images
         : product.imageUrl
-          ? [product.imageUrl]
-          : [];
-
+        ? [product.imageUrl]
+        : [];
     console.log(`Images to delete:`, imagesToDelete);
 
     for (const imageUrl of imagesToDelete) {
@@ -131,11 +148,10 @@ export const deleteProduct = async (req, res) => {
         console.log(`Attempting to delete image: ${imageUrl}`);
         const url = new URL(imageUrl);
         const key = url.pathname.substring(1);
-
         await s3.send(
           new DeleteObjectCommand({
             Bucket: process.env.AWS_S3_BUCKET_NAME,
-            Key: key
+            Key: key,
           })
         );
         console.log(`Successfully deleted image: ${imageUrl}`);
@@ -143,16 +159,14 @@ export const deleteProduct = async (req, res) => {
         console.error(`Error deleting image ${imageUrl}:`, deleteError.message);
       }
     }
-
     const deletedProduct = await prisma.product.delete({
-      where: { id: productId }
+      where: { id: productId },
     });
-
     console.log(`Product deleted successfully:`, deletedProduct);
-
-    res
-      .status(200)
-      .json({ success: true, message: "Product deleted successfully" });
+    res.status(200).json({
+      success: true,
+      message: "Product deleted successfully",
+    });
   } catch (error) {
     console.error("❌ Error deleting product:", error.message);
     res.status(500).json({ error: "Failed to delete product" });

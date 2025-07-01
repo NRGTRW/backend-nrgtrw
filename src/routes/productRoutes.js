@@ -1,9 +1,12 @@
+import { PrismaClient } from "@prisma/client";
+import {
+  S3Client,
+  DeleteObjectCommand,
+  PutObjectCommand,
+} from "@aws-sdk/client-s3";
 import express from "express";
 import multer from "multer";
-import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
 import { authAndAdminMiddleware } from "../middlewares/authMiddleware.js";
-import { deleteProduct, getAllProducts, getProductById } from "../controllers/productController.js";
-import { PrismaClient } from "@prisma/client";
 
 const prisma = new PrismaClient();
 const router = express.Router();
@@ -43,19 +46,65 @@ async function uploadFileToS3(file, folder) {
 }
 
 // -------------------- Public Routes --------------------
-router.get("/", getAllProducts);
-router.get("/:id", getProductById);
+
+// GET all products.
+router.get("/", async (req, res) => {
+  try {
+    console.log("Fetching products from the database...");
+    const products = await prisma.product.findMany({
+      include: {
+        sizes: { include: { size: true } },
+        colors: true,
+        category: true,
+        translations: true, // Include translations for frontend/editing
+      },
+    });
+    console.log("✅ Products fetched:", products);
+    res.status(200).json(products);
+  } catch (error) {
+    console.error("❌ Error fetching products:", error.message);
+    res.status(500).json({ error: "Failed to fetch products" });
+  }
+});
+
+// GET product by ID.
+router.get("/:id", async (req, res) => {
+  const { id } = req.params;
+  try {
+    const product = await prisma.product.findUnique({
+      where: { id: parseInt(id, 10) },
+      include: {
+        sizes: { include: { size: true } },
+        colors: true,
+        category: true,
+        translations: true, // Include translations
+      },
+    });
+    if (!product) {
+      return res.status(404).json({ error: "Product not found" });
+    }
+    const formattedProduct = {
+      ...product,
+      sizes: product.sizes.map((ps) => ps.size),
+    };
+
+    return res.status(200).json(formattedProduct);
+  } catch (error) {
+    console.error(`Error fetching product with ID ${id}:`, error.message);
+    if (!res.headersSent) {
+      return res.status(500).json({ error: "Failed to fetch product." });
+    }
+  }
+});
 
 /**
  * POST "/" – Create New Product (Admin Only)
  *
- * Expects a multipart/form-data request containing text fields:
- *   - name, description, price, categoryId, sizes, colors
- *   (If sizes or colors are sent as JSON strings, they are parsed.)
+ * Expects a multipart/form-data request with text fields:
+ *   - enName, enDescription, bgName, bgDescription, price, categoryId, sizes, colors
+ * (If sizes or colors are sent as JSON strings, they are parsed.)
  *
- * (Optional file uploads are ignored here, so fallback images are stored.)
- *
- * Returns the new product (with generated color IDs).
+ * Creates nested translation records for English and Bulgarian.
  */
 router.post(
   "/",
@@ -63,158 +112,83 @@ router.post(
   upload.any(),
   async (req, res) => {
     try {
-      // Parse text fields.
-      let { name, description, price, categoryId, sizes, colors } = req.body;
+      let {
+        enName,
+        enDescription,
+        bgName,
+        bgDescription,
+        price,
+        categoryId,
+        sizes,
+        colors,
+      } = req.body;
       if (typeof sizes === "string") sizes = JSON.parse(sizes);
       if (typeof colors === "string") colors = JSON.parse(colors);
 
-      // Define fallback image URLs.
-      const fallbackMain = "temp-main-image";
-      const fallbackColor = "temp-color-image";
-      const fallbackHover = "temp-hover-image";
+      // Fallback: If separate translation fields are missing, fall back to name/description.
+      enName = enName || req.body.name;
+      enDescription = enDescription || req.body.description;
+      bgName = bgName || req.body.name;
+      bgDescription = bgDescription || req.body.description;
 
-      // Prepare the colors array (using order to help with later image matching).
-      const processedColors = colors.map((color, index) => ({
+      // Use a fallback empty array for req.files.
+      const imagePaths = [];
+      (req.files || []).forEach((file) => {
+        imagePaths.push(file.path);
+      });
+
+      // Process colors assuming two images per color.
+      const colorData = colors.map((color, index) => ({
         colorName: color.colorName,
-        imageUrl: fallbackColor,
-        hoverImage: fallbackHover,
+        imageUrl: imagePaths[index * 2] || "temp-color-image",
+        hoverImage: imagePaths[index * 2 + 1] || "temp-hover-image",
         position: index,
       }));
 
-      // Create the product with nested creation for colors and sizes.
+      // Fallback main image for translations.
+      const fallbackMain = imagePaths[0] || "temp-main-image";
+
       const newProduct = await prisma.product.create({
         data: {
-          name,
-          description,
           price: parseFloat(price),
           stock: 100,
-          categoryId: Number(categoryId),
-          imageUrl: fallbackMain,
-          colors: { create: processedColors },
+          // Connect category via relation.
+          category: { connect: { id: Number(categoryId) } },
+          colors: { create: colorData },
           sizes: {
             create: sizes.map((size) => ({
               size: { connect: { size } },
             })),
           },
+          translations: {
+            create: [
+              {
+                language: "en",
+                name: enName,
+                description: enDescription,
+                imageUrl: fallbackMain,
+              },
+              {
+                language: "bg",
+                name: bgName,
+                description: bgDescription,
+                imageUrl: fallbackMain,
+              },
+            ],
+          },
         },
-        include: { colors: { orderBy: { position: "asc" } } },
+        include: {
+          colors: { orderBy: { position: "asc" } },
+          translations: true,
+        },
       });
 
       res.status(201).json({ success: true, product: newProduct });
     } catch (error) {
       console.error("Error creating product:", error);
-      res.status(500).json({ success: false, message: "Product creation failed" });
-    }
-  }
-);
-
-/**
- * PUT "/:id/add-color" – Add a New Color to an Existing Product (Admin Only)
- *
- * Expects a JSON (or URL-encoded) body: { "colorName": "New Color Name" }
- *
- * Returns the new color record.
- */
-router.put(
-  "/:id/add-color",
-  authAndAdminMiddleware(["ADMIN", "ROOT_ADMIN"]),
-  async (req, res) => {
-    const { id } = req.params; // product id
-    const { colorName } = req.body;
-    if (!colorName) {
-      return res.status(400).json({ success: false, message: "colorName is required" });
-    }
-    const fallbackColor = "temp-color-image";
-    const fallbackHover = "temp-hover-image";
-    try {
-      const newColor = await prisma.color.create({
-        data: {
-          colorName,
-          imageUrl: fallbackColor,
-          hoverImage: fallbackHover,
-          product: { connect: { id: Number(id) } },
-          position: 0,
-        },
-      });
-      res.status(200).json({ success: true, color: newColor });
-    } catch (error) {
-      console.error("Error adding color:", error);
-      res.status(500).json({ success: false, message: "Failed to add color" });
-    }
-  }
-);
-
-/**
- * POST "/upload-images" – Update Images for a Product (Admin Only)
- *
- * Expects a FormData payload with:
- *   - A text field "productId"
- *   - Optional file fields:
- *       • "mainImage" for the product’s main image.
- *       • For each color, file fields named "colorImage_{index}" and/or "colorHoverImage_{index}"
- *         (where {index} is the order in which the color was created).
- */
-router.post(
-  "/upload-images",
-  authAndAdminMiddleware(["ADMIN", "ROOT_ADMIN"]),
-  upload.any(),
-  async (req, res) => {
-    try {
-      console.log("Upload-images endpoint hit");
-      console.log("Request body:", req.body);
-      console.log("Files received:", req.files);
-
-      const { productId } = req.body;
-      const files = req.files || [];
-      const product = await prisma.product.findUnique({
-        where: { id: Number(productId) },
-        include: { colors: { orderBy: { position: "asc" } } },
-      });
-      if (!product) {
-        return res.status(404).json({ success: false, message: "Product not found" });
-      }
-      const updatePromises = [];
-      const mainImageFile = files.find(file => file.fieldname === "mainImage");
-      if (mainImageFile) {
-        const mainImageUrl = await uploadFileToS3(mainImageFile, "products");
-        updatePromises.push(
-          prisma.product.update({
-            where: { id: product.id },
-            data: { imageUrl: mainImageUrl },
-          })
-        );
-      }
-      // Note: The hoverImage update has been removed because the Product model does not have a hoverImage field.
-      // For each color (by order), update its images if files are provided.
-      product.colors.forEach((colorRecord, index) => {
-        const colorImageFile = files.find(file => file.fieldname === `colorImage_${index}`);
-        const colorHoverImageFile = files.find(file => file.fieldname === `colorHoverImage_${index}`);
-        if (colorImageFile) {
-          updatePromises.push(
-            uploadFileToS3(colorImageFile, "colors").then(url =>
-              prisma.color.update({
-                where: { id: colorRecord.id },
-                data: { imageUrl: url },
-              })
-            )
-          );
-        }
-        if (colorHoverImageFile) {
-          updatePromises.push(
-            uploadFileToS3(colorHoverImageFile, "colors").then(url =>
-              prisma.color.update({
-                where: { id: colorRecord.id },
-                data: { hoverImage: url },
-              })
-            )
-          );
-        }
-      });
-      await Promise.all(updatePromises);
-      res.status(200).json({ success: true, message: "Images updated successfully" });
-    } catch (error) {
-      console.error("Upload error:", error);
-      res.status(500).json({ success: false, message: "Image upload failed" });
+      res
+        .status(500)
+        .json({ success: false, message: "Product creation failed" });
     }
   }
 );
@@ -222,9 +196,8 @@ router.post(
 /**
  * PUT "/:id" – Update Product Details and (optionally) Images (Admin Only)
  *
- * This endpoint updates product text fields and color text fields.
- * It also accepts file uploads (using field names "mainImage",
- * "colorImage_{colorId}", "colorHoverImage_{colorId}") to update image URLs.
+ * Updates product fields (price, category via relation) and nested translation records.
+ * File uploads for color images are processed.
  */
 router.put(
   "/:id",
@@ -233,20 +206,66 @@ router.put(
   async (req, res) => {
     const { id } = req.params;
     try {
-      let { name, description, price, categoryId, colors } = req.body;
+      let {
+        enName,
+        enDescription,
+        bgName,
+        bgDescription,
+        price,
+        categoryId,
+        colors,
+      } = req.body;
       if (typeof colors === "string") colors = JSON.parse(colors);
+
       await prisma.$transaction(async (tx) => {
+        // Update product fields.
         await tx.product.update({
           where: { id: Number(id) },
           data: {
-            name,
-            description,
             price: parseFloat(price),
-            categoryId: Number(categoryId),
+            category: { connect: { id: Number(categoryId) } },
           },
         });
+
+        const fallbackMain = "temp-main-image";
+
+        // Upsert English translation.
+        await tx.productTranslation.upsert({
+          where: { productId_language: { productId: Number(id), language: "en" } },
+          update: {
+            ...(enName ? { name: enName } : {}),
+            ...(enDescription ? { description: enDescription } : {}),
+          },
+          create: {
+            productId: Number(id),
+            language: "en",
+            name: enName,
+            description: enDescription,
+            imageUrl: fallbackMain,
+          },
+        });
+
+        // Upsert Bulgarian translation.
+        await tx.productTranslation.upsert({
+          where: { productId_language: { productId: Number(id), language: "bg" } },
+          update: {
+            ...(bgName ? { name: bgName } : {}),
+            ...(bgDescription ? { description: bgDescription } : {}),
+          },
+          create: {
+            productId: Number(id),
+            language: "bg",
+            name: bgName,
+            description: bgDescription,
+            imageUrl: fallbackMain,
+          },
+        });
+
+        // Update colors.
         if (colors && Array.isArray(colors)) {
-          const updatedColorIds = colors.filter(color => color.id).map(color => Number(color.id));
+          const updatedColorIds = colors
+            .filter((color) => color.id)
+            .map((color) => Number(color.id));
           await tx.color.deleteMany({
             where: {
               productId: Number(id),
@@ -278,29 +297,17 @@ router.put(
         }
       });
 
-      // Process file uploads.
+      // Process file uploads for color images.
       const files = req.files || [];
       const updatePromises = [];
-      const mainImageFile = files.find(file => file.fieldname === "mainImage");
-      if (mainImageFile) {
-        updatePromises.push(
-          uploadFileToS3(mainImageFile, "products").then(url =>
-            prisma.product.update({
-              where: { id: Number(id) },
-              data: { imageUrl: url },
-            })
-          )
-        );
-      }
-      // Removed hoverImage update for product.
-      files.forEach(file => {
+      files.forEach((file) => {
         if (file.fieldname.startsWith("colorImage_")) {
           const parts = file.fieldname.split("_");
           if (parts.length < 2) return;
           const colorId = Number(parts[1]);
           if (!colorId) return;
           updatePromises.push(
-            uploadFileToS3(file, "colors").then(url =>
+            uploadFileToS3(file, "colors").then((url) =>
               prisma.color.update({
                 where: { id: colorId },
                 data: { imageUrl: url },
@@ -314,7 +321,7 @@ router.put(
           const colorId = Number(parts[1]);
           if (!colorId) return;
           updatePromises.push(
-            uploadFileToS3(file, "colors").then(url =>
+            uploadFileToS3(file, "colors").then((url) =>
               prisma.color.update({
                 where: { id: colorId },
                 data: { hoverImage: url },
@@ -326,7 +333,7 @@ router.put(
       await Promise.all(updatePromises);
       const finalProduct = await prisma.product.findUnique({
         where: { id: Number(id) },
-        include: { colors: { orderBy: { id: "asc" } } },
+        include: { colors: { orderBy: { id: "asc" } }, translations: true },
       });
       return res.status(200).json({
         success: true,
@@ -344,10 +351,164 @@ router.put(
 );
 
 // DELETE Product (Admin Only)
+// DELETE Product (Admin Only)
 router.delete(
   "/:id",
   authAndAdminMiddleware(["ADMIN", "ROOT_ADMIN"]),
-  deleteProduct
+  async (req, res) => {
+    const { id } = req.params;
+    try {
+      const productId = parseInt(id, 10);
+      console.log(`Received DELETE request for product with ID: ${productId}`);
+
+      // Check if the product exists.
+      const product = await prisma.product.findUnique({
+        where: { id: productId },
+      });
+      if (!product) {
+        console.log(`Product with ID ${productId} not found.`);
+        return res.status(404).json({ error: "Product not found" });
+      }
+      console.log("Product found for deletion:", product);
+
+      // If you previously stored any images on S3 (via colors or translations),
+      // you might want to delete them here.
+      // (This example assumes you may have stored a top-level imageUrl,
+      //  but if not, you can remove the following block.)
+      const imagesToDelete =
+        product.images && Array.isArray(product.images)
+          ? product.images
+          : product.imageUrl
+          ? [product.imageUrl]
+          : [];
+      console.log("Images to delete:", imagesToDelete);
+      for (const imageUrl of imagesToDelete) {
+        try {
+          console.log(`Attempting to delete image: ${imageUrl}`);
+          const url = new URL(imageUrl);
+          const key = url.pathname.substring(1);
+          await s3.send(
+            new DeleteObjectCommand({
+              Bucket: process.env.AWS_S3_BUCKET_NAME,
+              Key: key,
+            })
+          );
+          console.log(`Successfully deleted image: ${imageUrl}`);
+        } catch (deleteError) {
+          console.error(`Error deleting image ${imageUrl}:`, deleteError.message);
+        }
+      }
+
+      // Delete dependent records first to satisfy foreign key constraints.
+      // Delete associated colors.
+      await prisma.color.deleteMany({ where: { productId: productId } });
+      // Delete associated translations.
+      await prisma.productTranslation.deleteMany({ where: { productId: productId } });
+      // Delete associated sizes (if applicable—adjust the model name as needed).
+      await prisma.productSize.deleteMany({ where: { productId: productId } });
+
+      // Now delete the product.
+      const deletedProduct = await prisma.product.delete({
+        where: { id: productId },
+      });
+      console.log("Product deleted successfully:", deletedProduct);
+      res.status(200).json({
+        success: true,
+        message: "Product deleted successfully",
+      });
+    } catch (error) {
+      console.error("Error deleting product:", error.message);
+      res.status(500).json({ error: "Failed to delete product" });
+    }
+  }
+);
+
+
+/**
+ * POST "/upload-images" – Upload Product Images (Admin Only)
+ *
+ * This endpoint handles image uploads (main image and color images) after a product is created.
+ * It expects a multipart/form-data request containing:
+ *  - A "productId" field
+ *  - Optional "mainImage" file
+ *  - Color image files with field names like "colorImage_0", "colorHoverImage_0", etc.
+ */
+router.post(
+  "/upload-images",
+  authAndAdminMiddleware(["ADMIN", "ROOT_ADMIN"]),
+  upload.any(),
+  async (req, res) => {
+    try {
+      const { productId } = req.body;
+      if (!productId) {
+        return res.status(400).json({ success: false, message: "Product ID is required" });
+      }
+
+      // Verify product exists.
+      const product = await prisma.product.findUnique({
+        where: { id: Number(productId) },
+      });
+      if (!product) {
+        return res.status(404).json({ success: false, message: "Product not found" });
+      }
+
+      const files = req.files || [];
+      const updatePromises = [];
+
+      // Process mainImage (if provided) and update all translations with the main image URL.
+      const mainImageFile = files.find((file) => file.fieldname === "mainImage");
+      if (mainImageFile) {
+        const mainImageUrl = await uploadFileToS3(mainImageFile, "products/main");
+        updatePromises.push(
+          prisma.productTranslation.updateMany({
+            where: { productId: Number(productId) },
+            data: { imageUrl: mainImageUrl },
+          })
+        );
+      }
+
+      // Process color images based on field names.
+      files.forEach((file) => {
+        if (file.fieldname.startsWith("colorImage_")) {
+          const parts = file.fieldname.split("_");
+          if (parts.length < 2) return;
+          const index = Number(parts[1]);
+          updatePromises.push(
+            uploadFileToS3(file, "products/colors").then(async (url) => {
+              await prisma.color.updateMany({
+                where: {
+                  productId: Number(productId),
+                  position: index,
+                },
+                data: { imageUrl: url },
+              });
+            })
+          );
+        } else if (file.fieldname.startsWith("colorHoverImage_")) {
+          const parts = file.fieldname.split("_");
+          if (parts.length < 2) return;
+          const index = Number(parts[1]);
+          updatePromises.push(
+            uploadFileToS3(file, "products/colors").then(async (url) => {
+              await prisma.color.updateMany({
+                where: {
+                  productId: Number(productId),
+                  position: index,
+                },
+                data: { hoverImage: url },
+              });
+            })
+          );
+        }
+      });
+
+      await Promise.all(updatePromises);
+      res.status(200).json({ success: true, message: "Images uploaded successfully" });
+    } catch (error) {
+      console.error("Error uploading images:", error);
+      res.status(500).json({ success: false, message: "Image upload failed" });
+    }
+  }
 );
 
 export default router;

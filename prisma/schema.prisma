@@ -36,27 +36,38 @@ model User {
   cartItems      CartItem[]
   orders         Order[]
   wishlist       Wishlist[]
-  payments       Payment[] // <-- relation to payments
+  payments       Payment[]
 }
 
 model Product {
-  id          Int           @id @default(autoincrement())
-  name        String
-  price       Float
-  description String        @db.Text
-  imageUrl    String?       @db.Text
-  createdAt   DateTime      @default(now())
-  updatedAt   DateTime      @updatedAt
-  categoryId  Int?
-  stock       Int
-  category    Category?     @relation(fields: [categoryId], references: [id])
-  colors      Color[]
-  sizes       ProductSize[]
-  wishlist    Wishlist[]
-  cartItems   CartItem[]
-  orderItems  OrderItem[]
+  id           Int                  @id @default(autoincrement())
+  stock        Int
+  price        Float
+  createdAt    DateTime             @default(now())
+  updatedAt    DateTime             @updatedAt
+  categoryId   Int?
+  category     Category?            @relation(fields: [categoryId], references: [id])
+  colors       Color[]
+  sizes        ProductSize[]
+  wishlist     Wishlist[]
+  cartItems    CartItem[]
+  orderItems   OrderItem[]
+  translations ProductTranslation[]
 
   @@index([categoryId], map: "Product_categoryId_fkey")
+}
+
+model ProductTranslation {
+  id          Int       @id @default(autoincrement())
+  productId   Int
+  product     Product   @relation(fields: [productId], references: [id])
+  language    String
+  name        String
+  description String    @db.Text
+  imageUrl    String    @db.Text
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  @@unique([productId, language], map: "ProductTranslation_unique")
 }
 
 model Category {
@@ -100,6 +111,7 @@ model CartItem {
   id            Int     @id @default(autoincrement())
   userId        Int
   productId     Int
+  name          String  @default("") // New required field with default value for existing rows
   quantity      Int
   selectedSize  String?
   selectedColor String?
@@ -116,9 +128,7 @@ model Order {
   updatedAt  DateTime    @updatedAt
   user       User        @relation(fields: [userId], references: [id], onDelete: Cascade, map: "Order_userId_fkey")
   orderItems OrderItem[]
-
-  // Inverse relation for Payment (one-to-one, optional)
-  payment Payment? @relation("OrderPayment")
+  payment    Payment?    @relation("OrderPayment")
 
   @@index([userId], map: "Order_userId_fkey")
 }
@@ -147,7 +157,6 @@ model ProductSize {
   @@index([sizeId], map: "ProductSize_sizeId_fkey")
 }
 
-// New Payment model to store Stripe payment details
 model Payment {
   id              Int           @id @default(autoincrement())
   orderId         Int?          @unique
@@ -157,9 +166,6 @@ model Payment {
   status          PaymentStatus @default(PENDING)
   createdAt       DateTime      @default(now())
   updatedAt       DateTime      @updatedAt
-
-  user User @relation(fields: [userId], references: [id])
-
-  // Specify the relation name to match the inverse field in Order.
-  order Order? @relation("OrderPayment", fields: [orderId], references: [id])
+  user            User          @relation(fields: [userId], references: [id])
+  order           Order?        @relation("OrderPayment", fields: [orderId], references: [id])
 }

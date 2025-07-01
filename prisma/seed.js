@@ -131,7 +131,7 @@ const seedSizes = async () => {
 
 const seedUsers = async () => {
   try {
-    const hashedPassword = await bcrypt.hash("Nikcho", 10);
+    const hashedPassword = await bcrypt.hash( process.env.EMAIL_PASSWORD, 10);
     const encryptedAddress = encrypt("Lyulin 8, bl.815, vh.A");
     const encryptedPhone = encrypt("0897338635");
 

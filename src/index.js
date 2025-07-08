@@ -55,12 +55,12 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(
   rateLimit({
-    windowMs: 15 * 60 * 1000, // 15 minutes
-    max: 1000 // Limit each IP to 1000 requests per windowMs
+    windowMs: 15 * 60 * 1000,
+    max: 1000
   })
 );
 
-// Static File Serving for Uploaded Files
+// Serve uploads with CORS
 app.use(
   "/uploads",
   (req, res, next) => {
@@ -73,21 +73,17 @@ app.use(
   express.static(path.join(__dirname, "uploads"))
 );
 
-// Request Logging Middleware
+// Log all requests
 app.use((req, res, next) => {
   console.log(`[${new Date().toISOString()}] ${req.method} ${req.url}`);
   next();
 });
 
-// Root Route
+// Health routes
 app.get("/", (req, res) => {
   res.send("Welcome to the NRG Backend Server! The API is running.");
 });
-
-// Health Check Route
 app.get("/health", (req, res) => res.status(200).send("API is running."));
-
-// Database Health Check Route
 app.get("/api/db-health", async (req, res) => {
   try {
     await prisma.$queryRaw`SELECT 1`;
@@ -98,7 +94,7 @@ app.get("/api/db-health", async (req, res) => {
   }
 });
 
-// API Routes
+// API routes
 app.use("/api/auth", authRoutes);
 app.use("/api/profile", profileRoutes);
 app.use("/api/products", productRoutes);
@@ -109,7 +105,7 @@ app.use("/api/upload", uploadRoutes);
 app.use("/api/categories", categoriesRoutes);
 app.use("/api/checkout", checkoutRoutes);
 
-// Test Database Route
+// Test DB route
 app.get("/api/test-db", async (req, res) => {
   try {
     const result = await prisma.$queryRaw`SELECT 1`;
@@ -120,30 +116,18 @@ app.get("/api/test-db", async (req, res) => {
   }
 });
 
-// Catch-All Route for Undefined Paths
-app.use((req, res) => {
-  res.status(404).json({
-    error: "The requested resource could not be found on this server."
-  });
-});
-
-// Global Error Handler
-app.use(errorMiddleware);
-
-// hCaptcha API Call with Exponential Backoff
+// hCaptcha Test
 async function fetchWithExponentialBackoff(url, maxRetries = 5) {
   let retries = 0;
-  const initialDelay = 1000; // Start with a 1-second delay
-
+  const delay = 1000;
   while (retries < maxRetries) {
     try {
       const response = await fetch(url);
-      if (response.ok) {
-        return response.json();
-      } else if (response.status === 429) {
-        const delay = Math.min(initialDelay * (2 ** retries), 30000); // Max delay of 30 seconds
-        console.warn(`Rate limited. Retrying in ${delay / 1000} seconds...`);
-        await new Promise(resolve => setTimeout(resolve, delay));
+      if (response.ok) return response.json();
+      if (response.status === 429) {
+        const wait = Math.min(delay * 2 ** retries, 30000);
+        console.warn(`Rate limited. Retrying in ${wait / 1000}s`);
+        await new Promise((r) => setTimeout(r, wait));
         retries++;
       } else {
         throw new Error(`Unexpected status code: ${response.status}`);
@@ -153,30 +137,42 @@ async function fetchWithExponentialBackoff(url, maxRetries = 5) {
       retries++;
     }
   }
-
-  throw new Error('Max retries exceeded');
+  throw new Error("Max retries exceeded");
 }
 
-// Example Usage of hCaptcha API Call
 app.get("/api/hcaptcha", async (req, res) => {
   try {
-    const captchaData = await fetchWithExponentialBackoff('https://api.hcaptcha.com/getcaptcha/463b917e-e264-403f-ad34-34af0ee10294');
+    const captchaData = await fetchWithExponentialBackoff(
+      "https://api.hcaptcha.com/getcaptcha/463b917e-e264-403f-ad34-34af0ee10294"
+    );
     res.json({ success: true, data: captchaData });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
 });
 
-// Server Listener
-const PORT = process.env.PORT || 8088;
-// Serve Frontend Static Files
-app.use(express.static(path.join(__dirname, "../client/dist"))); // Update path if needed
+// Serve frontend (after all APIs)
+app.use(express.static(path.join(__dirname, "../frontend-nrgtrw/dist")));
 
-// Catch-all Route to Serve React App
 app.get("*", (req, res) => {
-  res.sendFile(path.join(__dirname, "../client/dist", "index.html"));
+  res.sendFile(path.join(__dirname, "../frontend-nrgtrw/dist", "index.html"));
 });
 
+// Global 404 handler (only for APIs)
+app.use((req, res, next) => {
+  if (req.originalUrl.startsWith("/api")) {
+    return res.status(404).json({
+      error: "The requested resource could not be found on this server."
+    });
+  }
+  next();
+});
+
+// Global error handler
+app.use(errorMiddleware);
+
+// Start server
+const PORT = process.env.PORT || 8088;
 app.listen(PORT, () => {
   console.log(`[${new Date().toISOString()}] Server running on port ${PORT}`);
 });

@@ -169,6 +169,14 @@ app.get("/api/hcaptcha", async (req, res) => {
 
 // Server Listener
 const PORT = process.env.PORT || 8088;
+// Serve Frontend Static Files
+app.use(express.static(path.join(__dirname, "../client/dist"))); // Update path if needed
+
+// Catch-all Route to Serve React App
+app.get("*", (req, res) => {
+  res.sendFile(path.join(__dirname, "../client/dist", "index.html"));
+});
+
 app.listen(PORT, () => {
   console.log(`[${new Date().toISOString()}] Server running on port ${PORT}`);
 });

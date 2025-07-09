@@ -152,10 +152,15 @@ app.get("/api/hcaptcha", async (req, res) => {
 });
 
 // Serve frontend (after all APIs)
-app.use(express.static(path.join(__dirname, "../frontend-nrgtrw")));
+app.use(express.static(path.join(__dirname, "../../frontend-nrgtrw/dist")));
 
 app.get("*", (req, res) => {
-  res.sendFile(path.join(__dirname, "../frontend-nrgtrw", "index.html"));
+  // Only serve index.html for non-file routes
+  if (req.path.includes(".")) {
+    res.status(404).end();
+    return;
+  }
+  res.sendFile(path.join(__dirname, "../../frontend-nrgtrw/dist", "index.html"));
 });
 
 // Global 404 handler (only for APIs)

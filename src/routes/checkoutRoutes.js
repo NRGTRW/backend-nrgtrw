@@ -196,11 +196,40 @@ router.post(
       const session = event.data.object;
       (async () => {
         try {
+          // Update payment status
           await prisma.payment.update({
             where: { stripeSessionId: session.id },
             data: { status: "COMPLETED" },
           });
           console.log("Payment status updated to COMPLETED for session:", session.id);
+          
+          // Check if this is a fitness program purchase
+          const fitnessPurchase = await prisma.fitnessPurchase.findFirst({
+            where: { stripeSessionId: session.id }
+          });
+          
+          if (fitnessPurchase) {
+            // Update fitness purchase status
+            await prisma.fitnessPurchase.update({
+              where: { id: fitnessPurchase.id },
+              data: { status: "COMPLETED" }
+            });
+            console.log("Fitness purchase status updated to COMPLETED for session:", session.id);
+          }
+          
+          // Check if this is a fitness subscription
+          const fitnessSubscription = await prisma.fitnessSubscription.findFirst({
+            where: { stripeSessionId: session.id }
+          });
+          
+          if (fitnessSubscription) {
+            // Update fitness subscription status
+            await prisma.fitnessSubscription.update({
+              where: { id: fitnessSubscription.id },
+              data: { status: "COMPLETED" }
+            });
+            console.log("Fitness subscription status updated to COMPLETED for session:", session.id);
+          }
         } catch (err) {
           console.error("Error updating payment status:", err);
         }

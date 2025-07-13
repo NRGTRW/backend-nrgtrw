@@ -16,6 +16,7 @@ import uploadRoutes from "./routes/uploadRoutes.js";
 import categoriesRoutes from "./routes/categoriesRoutes.js";
 import checkoutRoutes from "./routes/checkoutRoutes.js";
 import fitnessRoutes from "./routes/fitnessRoutes.js";
+import waitlistRoutes from "./routes/waitlistRoutes.js";
 import { PrismaClient } from "@prisma/client";
 
 dotenv.config();
@@ -44,7 +45,7 @@ app.use(
         callback(new Error("Not allowed by CORS"));
       }
     },
-    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"], // Added PATCH
     allowedHeaders: ["Content-Type", "Authorization", "x-access-token", "Cache-Control"],
     credentials: true
   })
@@ -106,6 +107,7 @@ app.use("/api/upload", uploadRoutes);
 app.use("/api/categories", categoriesRoutes);
 app.use("/api/checkout", checkoutRoutes);
 app.use("/api/fitness", fitnessRoutes);
+app.use("/api/waitlist", waitlistRoutes);
 
 // Test DB route
 app.get("/api/test-db", async (req, res) => {

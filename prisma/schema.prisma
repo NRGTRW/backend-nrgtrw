@@ -27,6 +27,7 @@ model User {
   wishlist       Wishlist[]
   fitnessPurchases FitnessPurchase[]
   fitnessSubscriptions FitnessSubscription[]
+  fitnessWaitlist FitnessWaitlist[]
 }
 
 model Product {
@@ -199,6 +200,7 @@ model FitnessProgram {
   difficulty    String?              // e.g., "Beginner", "Intermediate", "Advanced"
   equipment     String?              @db.Text // JSON string of required equipment
   goals         String?              @db.Text // JSON string of program goals
+  waitlist      FitnessWaitlist[]
 }
 
 model FitnessPurchase {
@@ -229,4 +231,30 @@ model FitnessSubscription {
   user            User          @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId], map: "FitnessSubscription_userId_fkey")
+}
+
+model FitnessWaitlist {
+  id          Int      @id @default(autoincrement())
+  userId      Int?
+  programId   Int?
+  email       String
+  name        String
+  phone       String?
+  message     String?  @db.Text
+  status      WaitlistStatus @default(WAITING)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  user        User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  program     FitnessProgram? @relation(fields: [programId], references: [id], onDelete: SetNull)
+
+  @@unique([email, programId], map: "FitnessWaitlist_email_programId_unique")
+  @@index([userId], map: "FitnessWaitlist_userId_fkey")
+  @@index([programId], map: "FitnessWaitlist_programId_fkey")
+}
+
+enum WaitlistStatus {
+  WAITING
+  NOTIFIED
+  CONVERTED
+  REMOVED
 }

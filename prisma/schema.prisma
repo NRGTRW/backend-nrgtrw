@@ -190,6 +190,15 @@ model FitnessProgram {
   createdAt     DateTime             @default(now())
   updatedAt     DateTime             @updatedAt
   purchases     FitnessPurchase[]
+  
+  // New fields for detailed program content
+  instructions  String?              @db.Text
+  explanationVideo String?           @db.Text
+  programText   String?              @db.Text
+  duration      String?              // e.g., "8 weeks", "12 weeks"
+  difficulty    String?              // e.g., "Beginner", "Intermediate", "Advanced"
+  equipment     String?              @db.Text // JSON string of required equipment
+  goals         String?              @db.Text // JSON string of program goals
 }
 
 model FitnessPurchase {

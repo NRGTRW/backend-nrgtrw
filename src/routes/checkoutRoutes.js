@@ -38,11 +38,22 @@ router.post("/create-checkout-session", async (req, res) => {
     console.log("Stripe secret key:", process.env.STRIPE_SECRET_KEY);
     const { items, userId, type } = req.body;
     console.log("Received checkout request:", { items, userId, type });
-    if (!items || !userId) {
-      return res.status(400).json({ error: "Missing required fields" });
+    if (!userId) {
+      return res.status(400).json({ error: "Missing userId" });
+    }
+
+    // Validate based on checkout type
+    if (type === "fitness_subscription") {
+      if (!req.body.subscription) {
+        return res.status(400).json({ error: "Missing subscription data" });
+      }
+    } else if (!items) {
+      return res.status(400).json({ error: "Missing items" });
     }
 
     const line_items = [];
+    let createdPrice = null; // Declare price variable in outer scope
+    
     if (type === "fitness_one_time") {
       // Handle fitness program checkout as virtual product
       const s3BaseUrl = "https://nrgtrw-images.s3.eu-central-1.amazonaws.com/";
@@ -60,9 +71,39 @@ router.post("/create-checkout-session", async (req, res) => {
               images: imageUrl ? [imageUrl] : [],
               description: item.description || "Premium fitness program.",
             },
-            unit_amount: 5000, // $50 in cents
+            unit_amount: Math.round((item.price || 50) * 100), // Use item price or default to $50
           },
           quantity: item.quantity,
+        });
+      }
+    } else if (type === "fitness_subscription") {
+      // Handle fitness subscription checkout
+      const subscription = req.body.subscription;
+      
+      // Check if items have a priceId (frontend is sending existing price)
+      if (items && items.length > 0 && items[0].priceId) {
+        // Use existing price ID from frontend
+        line_items.push({
+          price: items[0].priceId,
+          quantity: 1,
+        });
+        createdPrice = { id: items[0].priceId }; // Set for database record
+      } else {
+        // Create a new Stripe price for the subscription
+        createdPrice = await stripe.prices.create({
+          unit_amount: Math.round((subscription.price || 100) * 100), // Default $100/month
+          currency: 'usd',
+          recurring: {
+            interval: subscription.interval || 'month',
+          },
+          product_data: {
+            name: subscription.name || "All Access Fitness Subscription",
+          },
+        });
+        
+        line_items.push({
+          price: createdPrice.id, // Use the created price ID
+          quantity: 1,
         });
       }
     } else {
@@ -119,18 +160,52 @@ router.post("/create-checkout-session", async (req, res) => {
     console.log("Using clientUrl:", clientUrl);
 
     // Create the Stripe Checkout session.
-    const session = await stripe.checkout.sessions.create({
+    const sessionConfig = {
       payment_method_types: ["card"],
       line_items,
-      mode: "payment",
       success_url: `${clientUrl}/checkout-success?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${clientUrl}/checkout-cancelled`,
       metadata: { userId: userId.toString() },
-    });
+    };
+
+    // Set mode based on checkout type
+    if (type === "fitness_subscription") {
+      sessionConfig.mode = "subscription";
+    } else {
+      sessionConfig.mode = "payment";
+    }
+
+    const session = await stripe.checkout.sessions.create(sessionConfig);
     console.log("Stripe session created successfully:", session.id);
 
-    // Only create an Order for non-fitness products (optional, or you can skip for virtual)
-    if (type !== "fitness_one_time") {
+    // Handle different checkout types
+    if (type === "fitness_one_time") {
+      // Create fitness purchase record
+      for (const item of items) {
+        await prisma.fitnessPurchase.create({
+          data: {
+            userId: userId,
+            programId: item.programId || item.productId || item.id, // Handle multiple possible field names
+            stripeSessionId: session.id,
+            amount: (item.price || 50),
+            status: "PENDING",
+          },
+        });
+      }
+      console.log("Fitness purchase record created for session:", session.id);
+    } else if (type === "fitness_subscription") {
+      // Create fitness subscription record
+      await prisma.fitnessSubscription.create({
+        data: {
+          userId: userId,
+          stripeSessionId: session.id,
+          status: "PENDING",
+          stripePriceId: createdPrice.id, // Use the price ID we created above
+        },
+      });
+      console.log("Fitness subscription record created for session:", session.id);
+    } else {
+      // Default: Clothing/products from DB
       const order = await prisma.order.create({
         data: {
           userId: userId,

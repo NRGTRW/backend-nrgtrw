@@ -162,7 +162,23 @@ router.get("/admin/programs", authAndAdminMiddleware(["ADMIN", "ROOT_ADMIN"]), a
 // POST /api/fitness/admin/programs - Create new program (admin only)
 router.post("/admin/programs", authAndAdminMiddleware(["ADMIN", "ROOT_ADMIN"]), async (req, res) => {
   try {
-    const { title, description, image, video, pdfUrl, price, stripePriceId, isActive } = req.body;
+    const { 
+      title, 
+      description, 
+      image, 
+      video, 
+      pdfUrl, 
+      price, 
+      stripePriceId, 
+      isActive,
+      instructions,
+      explanationVideo,
+      programText,
+      duration,
+      difficulty,
+      equipment,
+      goals
+    } = req.body;
     
     const program = await prisma.fitnessProgram.create({
       data: {
@@ -173,7 +189,14 @@ router.post("/admin/programs", authAndAdminMiddleware(["ADMIN", "ROOT_ADMIN"]), 
         pdfUrl: pdfUrl || null,
         price: parseFloat(price),
         stripePriceId: stripePriceId || null,
-        isActive: isActive !== undefined ? isActive : true
+        isActive: isActive !== undefined ? isActive : true,
+        instructions: instructions || null,
+        explanationVideo: explanationVideo || null,
+        programText: programText || null,
+        duration: duration || null,
+        difficulty: difficulty || null,
+        equipment: equipment || null,
+        goals: goals || null
       }
     });
     
@@ -188,7 +211,23 @@ router.post("/admin/programs", authAndAdminMiddleware(["ADMIN", "ROOT_ADMIN"]), 
 router.put("/admin/programs/:id", authAndAdminMiddleware(["ADMIN", "ROOT_ADMIN"]), async (req, res) => {
   try {
     const { id } = req.params;
-    const { title, description, image, video, pdfUrl, price, stripePriceId, isActive } = req.body;
+    const { 
+      title, 
+      description, 
+      image, 
+      video, 
+      pdfUrl, 
+      price, 
+      stripePriceId, 
+      isActive,
+      instructions,
+      explanationVideo,
+      programText,
+      duration,
+      difficulty,
+      equipment,
+      goals
+    } = req.body;
     
     const program = await prisma.fitnessProgram.update({
       where: { id: parseInt(id) },
@@ -200,7 +239,14 @@ router.put("/admin/programs/:id", authAndAdminMiddleware(["ADMIN", "ROOT_ADMIN"]
         pdfUrl: pdfUrl || null,
         price: parseFloat(price),
         stripePriceId: stripePriceId || null,
-        isActive: isActive !== undefined ? isActive : true
+        isActive: isActive !== undefined ? isActive : true,
+        instructions: instructions || null,
+        explanationVideo: explanationVideo || null,
+        programText: programText || null,
+        duration: duration || null,
+        difficulty: difficulty || null,
+        equipment: equipment || null,
+        goals: goals || null
       }
     });
     

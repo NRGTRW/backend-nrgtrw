@@ -7,15 +7,14 @@ const S3_BASE = "https://nrgtrw-images.s3.eu-central-1.amazonaws.com/";
 const fitnessPrograms = [
   {
     title: "Shredded in 6 Weeks",
-    description: "Hypertrophy-focused fat loss program with cardio & nutrition add-ons.",
-    image: S3_BASE + "shred6.jpg",
-    video: S3_BASE + "shred6.mp4",
-    pdfUrl: S3_BASE + "pdfs/shred6.pdf",
-    price: 50.00,
+    description: "Aggressive fat loss while preserving muscle. 6-week PPL program with high protein, low carb diet, and strategic cardio.",
+    image: S3_BASE + "shred6.jpg", // Cover image
+    video: S3_BASE + "shred6.mp4", // Temporary video URL (same as Fitness.jsx)
+    pdfUrl: S3_BASE + "pdfs/shred6.pdf", // Placeholder, update if needed
+    price: 100.00,
     stripePriceId: "price_xxx_shred6", // TODO: Replace with real Stripe price ID
-    isActive: true,
-    duration: "6 weeks",
-    difficulty: "Intermediate",
+    isActive: true, // Locked for now
+    duration: "6 weeks (+2 week adaptation)",
     equipment: JSON.stringify([
       "Dumbbells",
       "Barbell",
@@ -25,318 +24,88 @@ const fitnessPrograms = [
       "Cardio equipment (optional)"
     ]),
     goals: JSON.stringify([
-      "Lose body fat while maintaining muscle",
-      "Improve cardiovascular fitness",
-      "Build lean muscle mass",
-      "Increase overall strength"
+      "Aggressive fat loss",
+      "Preserve muscle mass",
+      "Build discipline and consistency",
+      "Improve cardiovascular fitness"
     ]),
-    instructions: `SHREDDED IN 6 WEEKS - COMPLETE INSTRUCTIONS
+    instructions: `Shredded in 6 Weeks: Key Principles
 
-PROGRAM OVERVIEW:
-This 6-week transformation program is designed to help you lose body fat while building lean muscle mass. The program combines strength training, cardio, and nutrition to maximize your results.
+- Aggressive but sustainable fat loss approach
+- High-frequency Push/Pull/Legs (PPL) split to maximize muscle retention
+- Weekly progression in both training intensity and cardio volume
+- Whole-food, high-protein, low-carb nutrition for optimal results
+- Strategic use of LISS and HIIT cardio for fat loss and heart health
+- Built-in adaptation phase for safe transition into a calorie deficit
+- Mindset focus: Discipline, consistency, and embracing discomfort
+- Weekly check-ins and adjustments to ensure continued progress
+- Designed for rapid results without sacrificing muscle or health
+`,
+    programText: `🔥 Shredded in 6 Weeks Quick Guide
 
-WEEK 1-2: FOUNDATION PHASE
-Focus on establishing proper form and building endurance. Start with lighter weights and perfect your technique.
+Goal: Aggressive fat loss while preserving muscle
+Duration: 6 weeks (+Optional 2-Week Adaptation)
+Training Split: 6-day Push/Pull/Legs (PPL), twice/week
+Diet: High protein, low carb, moderate fat (whole foods only)
+Refeeds: 1 day/week higher carbs (still below maintenance)
+Cardio: 5–6x/week LISS, optional 1–2x/week HIIT
+Supplements: Omega-3, Creatine, Electrolytes, (Optional: Whey, Caffeine)
 
-WEEK 3-4: INTENSITY PHASE
-Increase weights and add more compound movements. Challenge yourself while maintaining good form.
+🟢 Adaptation Phase (Weeks -2 to 0)
+- Moderate intensity, RIR ~2–3 (easy pace)
+- Familiarize with exercises & routine
+- 3–4x/week easy LISS (20–30 mins)
+- Gradually reduce calories to ease into deficit (~500 kcal deficit)
+- Adjust to high protein, moderate fat, lower carbs (~75–100g carbs/day)
+- Build consistent habits, discipline, and comfort with routine
 
-WEEK 5-6: PEAK PHASE
-Maximum intensity with advanced techniques like supersets and drop sets.
+📌 Main Program Weekly Overview
+Week 1: Moderate (2 RIR most sets) | 4–5x LISS | Discipline & consistency
+Week 2: Slight increase (1–2 RIR) | 5x LISS + Optional short HIIT | Building momentum
+Week 3: Higher, intensify (0–1 RIR, some sets to failure) | 5–6x LISS + 1–2x HIIT | Grit, pushing through
+Week 4: High (strategic intensity, advanced techniques) | 5–6x LISS + 1–2x HIIT | Adapt & grind
+Week 5: Peak intensity (Failure, drop sets, supersets) | 6x LISS + 2x HIIT | Maximum push, embrace discomfort
+Week 6: Moderate–High (quality reps, slight taper) | 5–6x LISS + Optional HIIT | Finish strong, visualize goal
 
-WORKOUT SCHEDULE:
-- Monday: Upper Body Push
-- Tuesday: Lower Body
-- Wednesday: Rest/Cardio
-- Thursday: Upper Body Pull
-- Friday: Full Body
-- Saturday: Cardio + Core
-- Sunday: Rest
+🏋️ Training Split Overview (Repeat Twice/Week)
+Push (Chest, Shoulders, Triceps): Barbell Bench, Incline DB Press, OHP, Lateral Raises, Triceps Extensions (variation on 2nd day)
+Pull (Back, Biceps): Deadlift, Pull-ups, Rows, Face Pulls, Curls (variation on 2nd day)
+Legs (Quads, Hams, Glutes, Calves): Squats, Leg press, Lunges, RDLs, Leg curls/extensions, Hip thrusts, Calf raises (variation on 2nd day)
+Rest: One full rest/active recovery day weekly
 
-NUTRITION GUIDELINES:
-- Calculate your maintenance calories
-- Create a 300-500 calorie deficit
-- Protein: 1.6-2.2g per kg bodyweight
-- Carbs: 2-4g per kg bodyweight
-- Fats: 0.8-1.2g per kg bodyweight
+🥦 Nutrition Cheat Sheet
+Protein: 2–2.2g/kg (lean meats, fish, eggs, dairy)
+Fat: ~25–30% calories (avocado, nuts, fatty fish, olive oil)
+Carbs: <50g (fibrous veggies, small fruit, honey around workouts)
+Refeed: Higher carbs (~150–200g), lower fats, still in deficit
+Electrolytes & Hydration: Salt generously, potassium-rich foods, magnesium nightly
+Foods: Whole, natural (animal-based, veggies, fruits, honey). No processed food
 
-RECOVERY TIPS:
-- Get 7-9 hours of sleep per night
-- Stay hydrated (3-4 liters of water daily)
-- Consider foam rolling and stretching
-- Listen to your body and adjust intensity as needed
+🏃 Cardio Overview
+LISS: 25–40 mins (brisk walking, cycling, incline treadmill)
+HIIT (optional): 8–10 intervals (15–20 sec sprint / 40–45 sec slow), max 2x/week
 
-PROGRESS TRACKING:
-- Take progress photos weekly
-- Track your weight and measurements
-- Log your workouts and weights
-- Monitor your energy levels and recovery
+💊 Supplement Quick List
+Must-haves: Omega-3 Fish Oil, Creatine (5g/day), Electrolytes
+Optional: Whey Protein (post-workout), Caffeine (pre-workout), Magnesium (~300mg nightly)
 
-Remember: Consistency is key! Stick to the program and trust the process.`,
-    programText: `SHREDDED IN 6 WEEKS - COMPLETE PROGRAM DETAILS
+🧠 Mindset & Motivation Reminders
+Weeks 1–2: Build strong habits early. Discipline > Motivation
+Weeks 3–4: Embrace discomfort, fatigue is temporary, pride forever
+Weeks 5–6: Visualize your shredded result daily. Every rep counts
 
-WEEK 1-2: FOUNDATION PHASE
+📏 Tracking & Adjustments
+Weekly Check-in: Weight, waist circumference, photos (morning fasted)
+Adjust if stalling: Slightly decrease calories (~100–200/day) or slightly increase cardio (+5–10 min daily)
+Recovery: Prioritize sleep (8+ hrs), electrolytes, active recovery on rest days
 
-DAY 1: UPPER BODY PUSH
-1. Bench Press: 4 sets x 8-12 reps
-   - Rest: 2-3 minutes between sets
-   - Focus on controlled descent and explosive ascent
-   
-2. Overhead Press: 3 sets x 10-12 reps
-   - Rest: 2 minutes between sets
-   - Keep core tight and avoid arching back
-   
-3. Incline Dumbbell Press: 3 sets x 10-12 reps
-   - Rest: 2 minutes between sets
-   - Use 30-45 degree incline
-   
-4. Lateral Raises: 3 sets x 12-15 reps
-   - Rest: 90 seconds between sets
-   - Keep slight bend in elbows
-   
-5. Tricep Dips: 3 sets x 10-12 reps
-   - Rest: 90 seconds between sets
-   - Add weight if bodyweight becomes easy
+🔑 Post-Cut Transition
+Reverse Diet: Gradually increase calories (200–300/day per week)
+Maintain training: Reduce cardio gradually, maintain lifting frequency
+Set new goal: Performance, muscle gain, or maintain physique
 
-DAY 2: LOWER BODY
-1. Squats: 4 sets x 8-12 reps
-   - Rest: 3 minutes between sets
-   - Focus on depth and form
-   
-2. Romanian Deadlifts: 3 sets x 10-12 reps
-   - Rest: 2-3 minutes between sets
-   - Keep bar close to legs
-   
-3. Leg Press: 3 sets x 10-12 reps
-   - Rest: 2 minutes between sets
-   - Adjust foot position for different emphasis
-   
-4. Leg Extensions: 3 sets x 12-15 reps
-   - Rest: 90 seconds between sets
-   - Focus on peak contraction
-   
-5. Calf Raises: 4 sets x 15-20 reps
-   - Rest: 60 seconds between sets
-   - Full range of motion
-
-DAY 3: UPPER BODY PULL
-1. Pull-ups: 4 sets x 6-10 reps
-   - Rest: 2-3 minutes between sets
-   - Use assistance if needed
-   
-2. Barbell Rows: 3 sets x 10-12 reps
-   - Rest: 2 minutes between sets
-   - Keep chest up and core tight
-   
-3. Lat Pulldowns: 3 sets x 10-12 reps
-   - Rest: 2 minutes between sets
-   - Pull to upper chest
-   
-4. Bicep Curls: 3 sets x 12-15 reps
-   - Rest: 90 seconds between sets
-   - Control the movement
-   
-5. Hammer Curls: 3 sets x 12-15 reps
-   - Rest: 90 seconds between sets
-   - Alternate arms
-
-DAY 4: CARDIO + CORE
-1. HIIT Cardio: 20 minutes
-   - 30 seconds high intensity
-   - 30 seconds rest
-   - Repeat for 20 minutes
-   
-2. Planks: 3 sets x 60 seconds
-   - Rest: 60 seconds between sets
-   - Maintain straight line
-   
-3. Russian Twists: 3 sets x 20 each side
-   - Rest: 60 seconds between sets
-   - Add weight if needed
-   
-4. Leg Raises: 3 sets x 15 reps
-   - Rest: 60 seconds between sets
-   - Control the movement
-
-WEEK 3-4: INTENSITY PHASE
-
-DAY 1: UPPER BODY PUSH (ENHANCED)
-1. Bench Press: 4 sets x 6-10 reps (increase weight)
-2. Overhead Press: 3 sets x 8-10 reps
-3. Incline Dumbbell Press: 3 sets x 8-10 reps
-4. Lateral Raises: 3 sets x 10-12 reps
-5. Tricep Dips: 3 sets x 8-10 reps
-6. Push-ups: 3 sets to failure
-
-DAY 2: LOWER BODY (ENHANCED)
-1. Squats: 4 sets x 6-10 reps (increase weight)
-2. Romanian Deadlifts: 3 sets x 8-10 reps
-3. Leg Press: 3 sets x 8-10 reps
-4. Leg Extensions: 3 sets x 10-12 reps
-5. Calf Raises: 4 sets x 12-15 reps
-6. Lunges: 3 sets x 10 each leg
-
-DAY 3: UPPER BODY PULL (ENHANCED)
-1. Pull-ups: 4 sets x 8-12 reps
-2. Barbell Rows: 3 sets x 8-10 reps
-3. Lat Pulldowns: 3 sets x 8-10 reps
-4. Bicep Curls: 3 sets x 10-12 reps
-5. Hammer Curls: 3 sets x 10-12 reps
-6. Face Pulls: 3 sets x 12-15 reps
-
-DAY 4: CARDIO + CORE (ENHANCED)
-1. HIIT Cardio: 25 minutes
-2. Planks: 3 sets x 90 seconds
-3. Russian Twists: 3 sets x 25 each side
-4. Leg Raises: 3 sets x 20 reps
-5. Mountain Climbers: 3 sets x 30 seconds
-
-WEEK 5-6: PEAK PHASE
-
-DAY 1: UPPER BODY PUSH (MAXIMUM INTENSITY)
-1. Bench Press: 4 sets x 4-8 reps (maximum weight)
-2. Overhead Press: 3 sets x 6-8 reps
-3. Incline Dumbbell Press: 3 sets x 6-8 reps
-4. Lateral Raises: 3 sets x 8-10 reps
-5. Tricep Dips: 3 sets x 6-8 reps
-6. Push-ups: 3 sets to failure
-7. Superset: Dips + Push-ups (3 rounds)
-
-DAY 2: LOWER BODY (MAXIMUM INTENSITY)
-1. Squats: 4 sets x 4-8 reps (maximum weight)
-2. Romanian Deadlifts: 3 sets x 6-8 reps
-3. Leg Press: 3 sets x 6-8 reps
-4. Leg Extensions: 3 sets x 8-10 reps
-5. Calf Raises: 4 sets x 10-12 reps
-6. Lunges: 3 sets x 8 each leg
-7. Superset: Squats + Lunges (3 rounds)
-
-DAY 3: UPPER BODY PULL (MAXIMUM INTENSITY)
-1. Pull-ups: 4 sets x 10-15 reps
-2. Barbell Rows: 3 sets x 6-8 reps
-3. Lat Pulldowns: 3 sets x 6-8 reps
-4. Bicep Curls: 3 sets x 8-10 reps
-5. Hammer Curls: 3 sets x 8-10 reps
-6. Face Pulls: 3 sets x 10-12 reps
-7. Superset: Curls + Hammer Curls (3 rounds)
-
-DAY 4: CARDIO + CORE (MAXIMUM INTENSITY)
-1. HIIT Cardio: 30 minutes
-2. Planks: 3 sets x 120 seconds
-3. Russian Twists: 3 sets x 30 each side
-4. Leg Raises: 3 sets x 25 reps
-5. Mountain Climbers: 3 sets x 45 seconds
-6. Burpees: 3 sets x 10 reps
-
-NUTRITION GUIDELINES (DETAILED):
-
-CALORIE CALCULATION:
-- Calculate your BMR using the Mifflin-St Jeor equation
-- Multiply by activity factor (1.2-1.9)
-- Subtract 300-500 calories for fat loss
-
-MACRONUTRIENT BREAKDOWN:
-Protein: 1.6-2.2g per kg bodyweight
-- Sources: Chicken, fish, lean beef, eggs, protein powder
-- Distribute evenly throughout the day
-
-Carbohydrates: 2-4g per kg bodyweight
-- Sources: Rice, potatoes, oats, fruits, vegetables
-- Higher on workout days, lower on rest days
-
-Fats: 0.8-1.2g per kg bodyweight
-- Sources: Nuts, olive oil, avocado, fatty fish
-- Essential for hormone production
-
-MEAL TIMING:
-- Pre-workout: 2-3 hours before (balanced meal)
-- Post-workout: Within 30 minutes (protein + carbs)
-- Bedtime: Casein protein or cottage cheese
-
-HYDRATION:
-- Aim for 3-4 liters of water daily
-- Add electrolytes during intense workouts
-- Monitor urine color (should be light yellow)
-
-SUPPLEMENTATION RECOMMENDATIONS:
-
-ESSENTIAL SUPPLEMENTS:
-1. Whey Protein: 20-30g post-workout
-2. Creatine Monohydrate: 5g daily
-3. Multivitamin: Daily
-4. Omega-3: 1-2g daily
-
-OPTIONAL SUPPLEMENTS:
-1. BCAAs: During fasted workouts
-2. Pre-workout: 30 minutes before training
-3. Vitamin D: 2000-4000 IU daily
-4. Magnesium: 200-400mg before bed
-
-PROGRESS TRACKING SYSTEM:
-
-WEEKLY CHECK-INS:
-- Weight measurement (same time, same scale)
-- Progress photos (front, back, side)
-- Body measurements (chest, waist, arms, legs)
-- Workout performance (weights, reps, sets)
-
-MONTHLY ASSESSMENTS:
-- Body composition analysis
-- Strength testing (1RM on main lifts)
-- Progress photo comparison
-- Program adjustments if needed
-
-RECOVERY PROTOCOLS:
-
-SLEEP OPTIMIZATION:
-- 7-9 hours per night
-- Consistent sleep schedule
-- Dark, cool room (65-68°F)
-- No screens 1 hour before bed
-
-MOBILITY WORK:
-- Daily stretching routine
-- Foam rolling 3-4 times per week
-- Yoga or mobility work 2-3 times per week
-
-STRESS MANAGEMENT:
-- Meditation or deep breathing
-- Regular walks in nature
-- Adequate social connection
-- Work-life balance
-
-TROUBLESHOOTING GUIDE:
-
-IF YOU'RE NOT LOSING WEIGHT:
-- Recalculate your calorie needs
-- Increase cardio frequency
-- Check for hidden calories
-- Ensure adequate sleep
-
-IF YOU'RE TOO TIRED:
-- Reduce training intensity
-- Increase rest days
-- Check nutrition adequacy
-- Consider deload week
-
-IF YOU'RE NOT GAINING STRENGTH:
-- Ensure progressive overload
-- Check form on exercises
-- Increase protein intake
-- Improve sleep quality
-
-SUCCESS TIPS:
-1. Consistency beats perfection
-2. Track everything
-3. Be patient with results
-4. Celebrate small wins
-5. Adjust as needed
-6. Stay accountable
-7. Focus on the process
-8. Trust the program
-
-Remember: This is a marathon, not a sprint. Stay consistent, trust the process, and the results will come!`,
-    explanationVideo: S3_BASE + "videos/shred6_explanation.mp4"
+Full PDF: Download the complete guide`,
+    explanationVideo: S3_BASE + "shred6.mp4"
   },
   {
     title: "Precision Growth",
@@ -344,7 +113,7 @@ Remember: This is a marathon, not a sprint. Stay consistent, trust the process, 
     image: S3_BASE + "precisiongrowth.jpg",
     video: S3_BASE + "precisiongrowth.mp4",
     pdfUrl: S3_BASE + "pdfs/precisiongrowth.pdf",
-    price: 50.00,
+    price: 100.00,
     stripePriceId: "price_xxx_precision", // TODO: Replace with real Stripe price ID
     isActive: true,
     duration: "12 weeks",
@@ -372,18 +141,81 @@ Key principles:
 - Compound movements priority
 - Adequate rest and recovery
 - Precision nutrition tracking`,
-    programText: `PRECISION GROWTH - 12 WEEK PROGRAM
+    programText: `🌱 Precision Growth Quick Guide
 
-PHASE 1: WEEKS 1-4 - FOUNDATION
-Focus on perfecting form and establishing baseline strength.
+Goal: Steady lean muscle growth without excessive fat gain
+Duration: Ongoing lean-bulking phase
+Training Split: 5-day Push/Pull/Legs/Upper/Lower (PPLUL)
+Diet: Small calorie surplus, moderate protein, balanced carbs & fats
+Cardio: 2–3x/week Low-intensity
+Supplements (Optional): Omega-3, Creatine, Electrolytes, Whey, Caffeine
 
-PHASE 2: WEEKS 5-8 - BUILDING
-Increase volume and introduce more advanced techniques.
+📌 Program Philosophy Overview
+Lean Bulking: Small surplus (+200–300 kcal/day), gaining ~0.25–0.5% bodyweight weekly
+Advanced Training: Compound lifts for strength, isolation for aesthetics; intensity techniques (drop sets/rest-pause)
+Cardio: Strategic inclusion (2–3x/week) for health and reduced fat gain
+Data-Driven: Weekly tracking (weight, measurements, RPE/RIR logs)
+Mindset: Daily motivational prompts for discipline & consistency
 
-PHASE 3: WEEKS 9-12 - OPTIMIZATION
-Peak performance with maximum efficiency.
+🗓️ Weekly Training Split (PPLUL)
 
-[Detailed workout plans for each phase would be included here]`,
+Day 1: Push (Chest, Shoulders, Triceps) — Bench Press, OHP, Incline DB Press, Lat Raises, Triceps
+Day 2: Pull (Back, Rear Delts, Biceps) — Deadlift/Rack Pull, Pull-Ups, Rows, Face Pulls, Curls
+Day 3: Legs (Quads, Hams, Glutes, Calves) — Squats, Leg Press, RDL, Leg Curl/Ext, Calf Raises
+Day 4: Rest or Active Recovery — Light cardio, mobility, stretching
+Day 5: Upper Body (Compound) — Incline Bench, Barbell Rows, Weighted Dips, Cable Rows
+Day 6: Lower Body (Compound) — Front Squats, Lunges, Leg Curl, Calves
+Day 7: Rest & Recovery — Full rest, meal prep, reflection
+
+🏋️ Daily Workout Structure
+Sets: Typically 3–4 per exercise
+Reps: Compound lifts (5–8), Accessory lifts (8–15)
+Intensity: RIR 1–3 for compound, 0–1 isolation moves
+Tempo: Controlled eccentrics, explosive concentrics
+Advanced Techniques: Drop sets/rest-pause 1–2 exercises/session (clearly indicated)
+
+🥗 Nutrition Simplified
+Calories: Mild surplus (+200–300 kcal daily)
+Protein: 1.6–1.8g/kg bodyweight (lean meats, fish, dairy, eggs)
+Fat: ~25–30% total calories (avocado, nuts, oils)
+Carbs: Remaining calories (~45–55%) around workouts (rice, potatoes, fruits)
+Meal Timing: Carbs & protein pre/post-workout, minimal fats around training
+
+🚴 Cardio Guidelines
+Frequency: 2–3x/week, ~30 min each
+Intensity: Low-intensity (brisk walk, incline treadmill, cycling)
+Purpose: Heart health, improved recovery, reduced fat accumulation
+
+💊 Supplement Quick List (Optional)
+- Omega-3 Fish Oil (if low fish intake)
+- Creatine (0.1g/kg daily)
+- Electrolytes (hydration)
+- Whey Protein (convenience)
+- Caffeine (pre-workout performance)
+
+📈 Tracking Your Progress
+Weekly: Weigh-in (consistent conditions)
+Biweekly/Monthly: Tape measurements (chest, arms, thighs, waist, hips)
+Monthly: Progress photos (front, side, back)
+Daily: Training logs (exercise, sets, reps, RPE/RIR)
+
+🔄 Adjustments Based on Feedback
+Slow muscle gain: Slightly increase calories (~200 kcal/day)
+Excessive fat gain: Tighten diet, or mini-cut (2–6 weeks aggressive deficit)
+Plateau in strength: Deload every 4–6 weeks (1 week of reduced volume/intensity)
+Fatigue & Burnout: Prioritize recovery (sleep, deload), adjust cardio/volume as needed
+
+🧠 Mindset & Motivation Prompts (Examples)
+Discipline Over Motivation: Every rep matters—consistency wins
+Visualize Success: See the results before you lift; then make them real
+Small Wins: Progress adds up; celebrate incremental improvements
+Recovery Mindset: Rest days = Growth days; recovery is essential
+
+📅 Deload Protocol (Every 4–6 Weeks)
+Duration: 1 Week
+Reduce: Volume (by ~50%) or Intensity (~60% weight)
+Purpose: Recover, avoid plateaus, return stronger
+`,
     explanationVideo: S3_BASE + "videos/precision_explanation.mp4"
   },
   {
@@ -394,7 +226,7 @@ Peak performance with maximum efficiency.
     pdfUrl: S3_BASE + "pdfs/ppl.pdf",
     price: 50.00,
     stripePriceId: "price_xxx_ppl", // TODO: Replace with real Stripe price ID
-    isActive: true,
+    isActive: false,
     duration: "8 weeks",
     difficulty: "Advanced",
     equipment: JSON.stringify([
@@ -461,15 +293,17 @@ async function main() {
     });
     
     if (existingProgram) {
-      console.log(`Program "${program.title}" already exists, skipping...`);
-      continue;
+      const updatedProgram = await prisma.fitnessProgram.update({
+        where: { id: existingProgram.id },
+        data: program
+      });
+      console.log(`✅ Updated fitness program: ${updatedProgram.title}`);
+    } else {
+      const createdProgram = await prisma.fitnessProgram.create({
+        data: program
+      });
+      console.log(`✅ Created fitness program: ${createdProgram.title}`);
     }
-    
-    const createdProgram = await prisma.fitnessProgram.create({
-      data: program
-    });
-    
-    console.log(`✅ Created fitness program: ${createdProgram.title}`);
   }
   
   console.log('🎉 Fitness programs seeding completed!');

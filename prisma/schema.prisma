@@ -28,6 +28,7 @@ model User {
   fitnessPurchases FitnessPurchase[]
   fitnessSubscriptions FitnessSubscription[]
   fitnessWaitlist FitnessWaitlist[]
+  clothingVotes ClothingVote[]
 }
 
 model Product {
@@ -252,7 +253,33 @@ model FitnessWaitlist {
   @@index([programId], map: "FitnessWaitlist_programId_fkey")
 }
 
+model ClothingVote {
+  id          Int      @id @default(autoincrement())
+  userId      Int?
+  categoryId  Int
+  email       String
+  name        String
+  phone       String?
+  message     String?  @db.Text
+  priceRange  String?  // e.g., "50-100", "100-150", "150+"
+  status      ClothingVoteStatus @default(WAITING)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  user        User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@unique([email, categoryId], map: "ClothingVote_email_categoryId_unique")
+  @@index([userId], map: "ClothingVote_userId_fkey")
+  @@index([categoryId], map: "ClothingVote_categoryId_fkey")
+}
+
 enum WaitlistStatus {
+  WAITING
+  NOTIFIED
+  CONVERTED
+  REMOVED
+}
+
+enum ClothingVoteStatus {
   WAITING
   NOTIFIED
   CONVERTED

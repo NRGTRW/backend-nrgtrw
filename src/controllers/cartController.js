@@ -1,5 +1,6 @@
 import cartService from "../services/cartService.js";
 import prisma from "../../prisma/lib/prisma.js";
+import transporter from "../utils/smtpConfig.js";
 
 export const getCart = async (req, res) => {
   try {
@@ -50,6 +51,8 @@ export const addToCart = async (req, res) => {
     console.error("❌ Missing fields:", { productId, name, quantity });
     return res.status(400).json({ message: "Missing required fields." });
   }
+
+  // (Removed: Temu/mock product email notification)
 
   console.log("🛒 Checking if product exists in DB...");
   try {

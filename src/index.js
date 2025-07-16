@@ -17,6 +17,7 @@ import categoriesRoutes from "./routes/categoriesRoutes.js";
 import checkoutRoutes from "./routes/checkoutRoutes.js";
 import fitnessRoutes from "./routes/fitnessRoutes.js";
 import waitlistRoutes from "./routes/waitlistRoutes.js";
+import clothingVoteRoutes from "./routes/clothingVoteRoutes.js";
 import { PrismaClient } from "@prisma/client";
 
 dotenv.config();
@@ -108,6 +109,7 @@ app.use("/api/categories", categoriesRoutes);
 app.use("/api/checkout", checkoutRoutes);
 app.use("/api/fitness", fitnessRoutes);
 app.use("/api/waitlist", waitlistRoutes);
+app.use("/api/clothing-vote", clothingVoteRoutes);
 
 // Test DB route
 app.get("/api/test-db", async (req, res) => {

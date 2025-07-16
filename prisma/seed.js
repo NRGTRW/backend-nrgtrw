@@ -68,7 +68,7 @@ async function uploadFile(key, filePath) {
 
 // Before seeding, ensure that all image files (from products and their colors) exist in S3.
 async function seedS3Files() {
-  const products = [...eleganceProducts, ...pumpCoverProducts, ...confidenceProducts];
+  const products = [...eleganceProducts, ...pumpCoverProducts, ...confidenceProducts, ...availableProducts];
   const fileUrls = new Set();
 
   for (const product of products) {
@@ -171,7 +171,7 @@ const seedUsers = async () => {
 // Seed product categories.
 const seedCategories = async () => {
   try {
-    const categories = ["Elegance", "Pump Covers", "Confidence"];
+    const categories = ["Elegance", "Pump Covers", "Confidence", "Available"];
     for (const category of categories) {
       await prisma.category.upsert({
         where: { name: category },
@@ -631,6 +631,53 @@ const pumpCoverProducts = [
 
 const confidenceProducts = []; // Add products here if needed
 
+const availableProducts = [
+  {
+    id: 14,
+    price: 50.0,
+    stock: 100,
+    category: "Available",
+    colors: [
+      {
+        colorName: "Black",
+        image: `${BASE_URL}/images/Reflection Layer.jpg`,
+        hoverImage: `${BASE_URL}/images/Reflection Layer.jpg`
+      },
+      {
+        colorName: "Back",
+        image: `${BASE_URL}/images/Reflection Layer_back.webp`,
+        hoverImage: `${BASE_URL}/images/Reflection Layer_back.webp`
+      },
+      {
+        colorName: "Material",
+        image: `${BASE_URL}/images/Reflection Layer_upclose.webp`,
+        hoverImage: `${BASE_URL}/images/Reflection Layer_upclose.webp`
+      },
+      {
+        colorName: "Legit",
+        image: `${BASE_URL}/images/gym-mirror-tee-1.jpg`,
+        hoverImage: `${BASE_URL}/images/gym-mirror-tee-1.jpg`
+      },
+    ],
+    translations: [
+      {
+        language: "en",
+        name: "Reflection Layer",
+        description:
+          "Make a bold impression with this oversized streetwear tee. Soft cotton blend, fearless graphics – ideal for both grind time and chill time.",
+        imageUrl: `${BASE_URL}/images/Reflection Layer.jpg`,
+      },
+      {
+        language: "bg",
+        name: "Reflection Layer",
+        description:
+          "Направете смело впечатление с тази оувърсайз тениска със смели графики. Мека памучна смес – идеална както за тренировки, така и за почивка.",
+        imageUrl: `${BASE_URL}/images/Reflection Layer.jpg`,
+      },
+    ]
+  }
+];
+
 // Main seeding function.
 const main = async () => {
   console.log("🌱 Seeding database...");
@@ -646,7 +693,8 @@ const main = async () => {
   const products = [
     ...eleganceProducts,
     ...pumpCoverProducts,
-    ...confidenceProducts
+    ...confidenceProducts,
+    ...availableProducts
   ];
   await seedProducts(products);
 

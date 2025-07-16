@@ -2,6 +2,7 @@ import express from "express";
 import Stripe from "stripe";
 import { PrismaClient } from "@prisma/client";
 import dotenv from "dotenv";
+import nodemailer from "nodemailer";
 
 dotenv.config();
 
@@ -26,6 +27,14 @@ if (!clientUrl) {
   console.error("Missing CLIENT_URL in environment variables.");
   process.exit(1);
 }
+
+const transporter = nodemailer.createTransport({
+  service: "gmail",
+  auth: {
+    user: process.env.EMAIL_USER,
+    pass: process.env.EMAIL_PASSWORD
+  }
+});
 
 /**
  * POST /api/checkout/create-checkout-session
@@ -141,13 +150,18 @@ router.post("/create-checkout-session", async (req, res) => {
         if (imageUrl.includes("WhiteShirt")) {
           imageUrl = "https://nrgtrw-images.s3.eu-central-1.amazonaws.com/images/WhiteCroppedTurtuleneck.webp";
         }
+        // Patch: Only include image if valid HTTPS URL, else use default
+        const isValidImageUrl = imageUrl && imageUrl.startsWith("https://");
+        const safeImageUrl = isValidImageUrl
+          ? encodeS3Url(imageUrl)
+          : "https://nrgtrw-images.s3.eu-central-1.amazonaws.com/images/default-product-image.webp";
 
         line_items.push({
           price_data: {
             currency: "usd",
             product_data: {
               name: translation.name,
-              images: imageUrl ? [imageUrl] : [],
+              images: [safeImageUrl],
               description: translation.description,
             },
             unit_amount: Math.round(product.price * 100),
@@ -156,7 +170,14 @@ router.post("/create-checkout-session", async (req, res) => {
         });
       }
     }
-    console.log("Constructed line items:", line_items);
+    console.log("Constructed line items:", JSON.stringify(line_items, null, 2));
+    if (line_items.length > 0) {
+      line_items.forEach((item, idx) => {
+        if (item.price_data && item.price_data.product_data && item.price_data.product_data.images) {
+          console.log(`Line item [${idx}] image:`, item.price_data.product_data.images[0]);
+        }
+      });
+    }
     console.log("Using clientUrl:", clientUrl);
 
     // Create the Stripe Checkout session.
@@ -218,6 +239,37 @@ router.post("/create-checkout-session", async (req, res) => {
         },
       });
       console.log("Order created with id:", order.id);
+
+      // Check for Temu/mock product in the order
+      const hasTemuProduct = items.some(item => item.productId === 999999);
+      if (hasTemuProduct) {
+        // Fetch user details
+        const user = await prisma.user.findUnique({ where: { id: userId } });
+        // Compose email
+        const temuItems = items.filter(item => item.productId === 999999);
+        const temuDetails = temuItems.map(item => `
+          <li>
+            <strong>${item.name}</strong><br/>
+            Color: ${item.selectedColor || '-'}<br/>
+            Size: ${item.selectedSize || '-'}<br/>
+            Quantity: ${item.quantity}<br/>
+          </li>
+        `).join('');
+        await transporter.sendMail({
+          from: process.env.EMAIL_USER,
+          to: process.env.EMAIL_USER, // Send to admin
+          subject: "New Temu/Mock Product Order",
+          html: `
+            <h2>New Temu/Mock Product Order</h2>
+            <p><strong>User:</strong> ${user?.name || '-'} (${user?.email || '-'})</p>
+            <p><strong>Address:</strong> ${user?.address ? '[Encrypted]' : '-'}</p>
+            <p><strong>Phone:</strong> ${user?.phone ? '[Encrypted]' : '-'}</p>
+            <ul>${temuDetails}</ul>
+            <p>Please fulfill this order manually on Temu and update the user accordingly.</p>
+          `
+        });
+        console.log("Temu order email sent to admin.");
+      }
 
       // Create a Payment record to track the payment status.
       if (prisma.payment) {
@@ -314,5 +366,17 @@ router.post(
     res.json({ received: true });
   }
 );
+
+// Helper to encode S3 image URLs for Stripe (encode only the filename)
+function encodeS3Url(url) {
+  if (!url) return url;
+  try {
+    const parts = url.split('/');
+    const filename = parts.pop();
+    return [...parts, encodeURIComponent(filename)].join('/');
+  } catch (e) {
+    return url;
+  }
+}
 
 export default router;

@@ -1,8 +1,6 @@
 // Import required modules and set up Prisma, S3, etc.
 import pkg from '@prisma/client';
-const { PrismaClient, Role } = pkg;
-import bcrypt from "bcrypt";
-import { encrypt } from "../src/utils/cryptoUtils.js";
+const { PrismaClient } = pkg;
 import { S3Client, HeadObjectCommand, PutObjectCommand } from "@aws-sdk/client-s3";
 import fs from "fs";
 import path from "path";
@@ -135,36 +133,6 @@ const seedSizes = async () => {
     console.log("✅ Seeded global sizes:", globalSizes);
   } catch (error) {
     console.error("❌ Error seeding sizes:", error.message);
-  }
-};
-
-// Seed a default user.
-const seedUsers = async () => {
-  try {
-    const hashedPassword = await bcrypt.hash( process.env.EMAIL_PASSWORD, 10);
-    const encryptedAddress = encrypt("Lyulin 8, bl.815, vh.A");
-    const encryptedPhone = encrypt("0897338635");
-
-    await prisma.user.upsert({
-      where: { email: process.env.EMAIL_USER },
-      update: {
-        updatedAt: new Date()
-      },
-      create: {
-        email: process.env.EMAIL_USER,
-        password: hashedPassword,
-        name: "Nikolay Goranov",
-        role: Role.ROOT_ADMIN,
-        address: encryptedAddress,
-        phone: encryptedPhone,
-        isVerified: true,
-        updatedAt: new Date()
-      }
-    });
-
-    console.log("✅ Seeded/Updated User");
-  } catch (error) {
-    console.error("❌ Error seeding user:", error.message);
   }
 };
 
@@ -680,13 +648,12 @@ const availableProducts = [
 
 // Main seeding function.
 const main = async () => {
-  console.log("🌱 Seeding database...");
+  console.log("🌱 Seeding products only...");
 
-  // First, ensure that all image files are in S3.
+  // Ensure all product image files are in S3.
   await seedS3Files();
-  // Seed sizes, users, and categories.
+  // Seed sizes and categories (required for products).
   await seedSizes();
-  await seedUsers();
   await seedCategories();
 
   // Combine and seed products.
@@ -698,7 +665,7 @@ const main = async () => {
   ];
   await seedProducts(products);
 
-  console.log("🌱 Seeding completed!");
+  console.log("🌱 Product seeding completed!");
 };
 
 main()

@@ -1,7 +1,6 @@
 import express from "express";
 import { PrismaClient } from "@prisma/client";
-import { protect } from "../middlewares/authMiddleware.js";
-import { authAndAdminMiddleware } from "../middlewares/authMiddleware.js";
+import { authenticate, requireAdmin } from "../middlewares/authMiddleware.js";
 import transporter from '../utils/smtpConfig.js';
 
 const router = express.Router();
@@ -92,7 +91,7 @@ router.post("/join", async (req, res) => {
 });
 
 // GET /api/waitlist/status - Check waitlist status for a user
-router.get("/status", protect, async (req, res) => {
+router.get("/status", authenticate, async (req, res) => {
   try {
     const userId = req.user.id;
     
@@ -151,7 +150,7 @@ router.get("/check", async (req, res) => {
 // ========== ADMIN ROUTES ==========
 
 // GET /api/waitlist/admin - Get all waitlist entries (admin only)
-router.get("/admin", authAndAdminMiddleware(["ADMIN", "ROOT_ADMIN"]), async (req, res) => {
+router.get("/admin", authenticate, requireAdmin, async (req, res) => {
   try {
     const { programId, status, page = 1, limit = 50 } = req.query;
     
@@ -202,7 +201,7 @@ router.get("/admin", authAndAdminMiddleware(["ADMIN", "ROOT_ADMIN"]), async (req
 });
 
 // PATCH /api/waitlist/admin/:id - Update waitlist entry status (admin only)
-router.patch("/admin/:id", authAndAdminMiddleware(["ADMIN", "ROOT_ADMIN"]), async (req, res) => {
+router.patch("/admin/:id", authenticate, requireAdmin, async (req, res) => {
   try {
     const { id } = req.params;
     const { status, message } = req.body;
@@ -241,7 +240,7 @@ router.patch("/admin/:id", authAndAdminMiddleware(["ADMIN", "ROOT_ADMIN"]), asyn
 });
 
 // DELETE /api/waitlist/admin/:id - Remove waitlist entry (admin only)
-router.delete("/admin/:id", authAndAdminMiddleware(["ADMIN", "ROOT_ADMIN"]), async (req, res) => {
+router.delete("/admin/:id", authenticate, requireAdmin, async (req, res) => {
   try {
     const { id } = req.params;
 
@@ -257,7 +256,7 @@ router.delete("/admin/:id", authAndAdminMiddleware(["ADMIN", "ROOT_ADMIN"]), asy
 });
 
 // GET /api/waitlist/admin/stats - Get waitlist statistics (admin only)
-router.get("/admin/stats", authAndAdminMiddleware(["ADMIN", "ROOT_ADMIN"]), async (req, res) => {
+router.get("/admin/stats", authenticate, requireAdmin, async (req, res) => {
   try {
     const [totalWaiting, totalNotified, totalConverted, totalRemoved] = await Promise.all([
       prisma.fitnessWaitlist.count({ where: { status: "WAITING" } }),

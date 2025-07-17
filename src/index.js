@@ -19,6 +19,9 @@ import fitnessRoutes from "./routes/fitnessRoutes.js";
 import waitlistRoutes from "./routes/waitlistRoutes.js";
 import clothingVoteRoutes from "./routes/clothingVoteRoutes.js";
 import { PrismaClient } from "@prisma/client";
+import requestRoutes from './routes/requestRoutes.js';
+import http from 'http';
+import { Server as SocketIOServer } from 'socket.io';
 
 dotenv.config();
 
@@ -26,6 +29,18 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const app = express();
+const server = http.createServer(app);
+const io = new SocketIOServer(server, {
+  cors: {
+    origin: 'http://localhost:5173',
+    methods: ['GET', 'POST', 'PATCH'],
+    credentials: true,
+  },
+});
+app.set('io', io);
+io.on('connection', (socket) => {
+  console.log('Socket.IO client connected:', socket.id);
+});
 const prisma = new PrismaClient();
 
 // CORS Configuration
@@ -110,6 +125,7 @@ app.use("/api/checkout", checkoutRoutes);
 app.use("/api/fitness", fitnessRoutes);
 app.use("/api/waitlist", waitlistRoutes);
 app.use("/api/clothing-vote", clothingVoteRoutes);
+app.use('/api', requestRoutes);
 
 // Test DB route
 app.get("/api/test-db", async (req, res) => {
@@ -184,6 +200,6 @@ app.use(errorMiddleware);
 
 // Start server
 const PORT = process.env.PORT || 8088;
-app.listen(PORT, () => {
-  console.log(`[${new Date().toISOString()}] Server running on port ${PORT}`);
+server.listen(PORT, () => {
+  console.log(`Server running with Socket.IO on port ${PORT}`);
 });

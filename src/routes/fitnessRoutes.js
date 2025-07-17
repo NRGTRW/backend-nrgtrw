@@ -1,7 +1,6 @@
 import express from "express";
 import { PrismaClient } from "@prisma/client";
-import { protect } from "../middlewares/authMiddleware.js";
-import { authAndAdminMiddleware } from "../middlewares/authMiddleware.js";
+import { authenticate, requireAdmin } from "../middlewares/authMiddleware.js";
 
 const router = express.Router();
 const prisma = new PrismaClient();
@@ -40,7 +39,7 @@ router.get("/programs/:id", async (req, res) => {
 });
 
 // GET /api/fitness/user-access - Check user's access to programs (requires auth)
-router.get("/user-access", protect, async (req, res) => {
+router.get("/user-access", authenticate, async (req, res) => {
   try {
     const userId = req.user.id;
     
@@ -102,7 +101,7 @@ router.get("/user-access", protect, async (req, res) => {
 });
 
 // POST /api/fitness/purchase - Record a fitness program purchase
-router.post("/purchase", protect, async (req, res) => {
+router.post("/purchase", authenticate, async (req, res) => {
   try {
     const { programId, stripeSessionId, amount } = req.body;
     const userId = req.user.id;
@@ -124,7 +123,7 @@ router.post("/purchase", protect, async (req, res) => {
 });
 
 // POST /api/fitness/subscription - Record a fitness subscription
-router.post("/subscription", protect, async (req, res) => {
+router.post("/subscription", authenticate, async (req, res) => {
   try {
     const { stripeSessionId, stripePriceId } = req.body;
     const userId = req.user.id;
@@ -147,7 +146,7 @@ router.post("/subscription", protect, async (req, res) => {
 // ========== ADMIN ROUTES ==========
 
 // GET /api/fitness/admin/programs - Get all programs (admin only)
-router.get("/admin/programs", authAndAdminMiddleware(["ADMIN", "ROOT_ADMIN"]), async (req, res) => {
+router.get("/admin/programs", authenticate, requireAdmin, async (req, res) => {
   try {
     const programs = await prisma.fitnessProgram.findMany({
       orderBy: { createdAt: "asc" }
@@ -160,7 +159,7 @@ router.get("/admin/programs", authAndAdminMiddleware(["ADMIN", "ROOT_ADMIN"]), a
 });
 
 // POST /api/fitness/admin/programs - Create new program (admin only)
-router.post("/admin/programs", authAndAdminMiddleware(["ADMIN", "ROOT_ADMIN"]), async (req, res) => {
+router.post("/admin/programs", authenticate, requireAdmin, async (req, res) => {
   try {
     const { 
       title, 
@@ -208,7 +207,7 @@ router.post("/admin/programs", authAndAdminMiddleware(["ADMIN", "ROOT_ADMIN"]), 
 });
 
 // PUT /api/fitness/admin/programs/:id - Update program (admin only)
-router.put("/admin/programs/:id", authAndAdminMiddleware(["ADMIN", "ROOT_ADMIN"]), async (req, res) => {
+router.put("/admin/programs/:id", authenticate, requireAdmin, async (req, res) => {
   try {
     const { id } = req.params;
     const { 
@@ -258,7 +257,7 @@ router.put("/admin/programs/:id", authAndAdminMiddleware(["ADMIN", "ROOT_ADMIN"]
 });
 
 // PATCH /api/fitness/admin/programs/:id/toggle - Toggle program active status (admin only)
-router.patch("/admin/programs/:id/toggle", authAndAdminMiddleware(["ADMIN", "ROOT_ADMIN"]), async (req, res) => {
+router.patch("/admin/programs/:id/toggle", authenticate, requireAdmin, async (req, res) => {
   try {
     const { id } = req.params;
     
@@ -283,7 +282,7 @@ router.patch("/admin/programs/:id/toggle", authAndAdminMiddleware(["ADMIN", "ROO
 });
 
 // DELETE /api/fitness/admin/programs/:id - Delete program (admin only)
-router.delete("/admin/programs/:id", authAndAdminMiddleware(["ADMIN", "ROOT_ADMIN"]), async (req, res) => {
+router.delete("/admin/programs/:id", authenticate, requireAdmin, async (req, res) => {
   try {
     const { id } = req.params;
     
@@ -312,7 +311,7 @@ router.delete("/admin/programs/:id", authAndAdminMiddleware(["ADMIN", "ROOT_ADMI
 // ========== SUBSCRIPTION MANAGEMENT ROUTES ==========
 
 // GET /api/fitness/admin/subscriptions - Get all subscriptions (admin only)
-router.get("/admin/subscriptions", authAndAdminMiddleware(["ADMIN", "ROOT_ADMIN"]), async (req, res) => {
+router.get("/admin/subscriptions", authenticate, requireAdmin, async (req, res) => {
   try {
     const subscriptions = await prisma.fitnessSubscription.findMany({
       include: {
@@ -334,7 +333,7 @@ router.get("/admin/subscriptions", authAndAdminMiddleware(["ADMIN", "ROOT_ADMIN"
 });
 
 // PATCH /api/fitness/admin/subscriptions/:id/cancel - Cancel subscription (admin only)
-router.patch("/admin/subscriptions/:id/cancel", authAndAdminMiddleware(["ADMIN", "ROOT_ADMIN"]), async (req, res) => {
+router.patch("/admin/subscriptions/:id/cancel", authenticate, requireAdmin, async (req, res) => {
   try {
     const { id } = req.params;
     
@@ -356,7 +355,7 @@ router.patch("/admin/subscriptions/:id/cancel", authAndAdminMiddleware(["ADMIN",
 // ========== ANALYTICS ROUTES ==========
 
 // GET /api/fitness/admin/analytics - Get fitness analytics (admin only)
-router.get("/admin/analytics", authAndAdminMiddleware(["ADMIN", "ROOT_ADMIN"]), async (req, res) => {
+router.get("/admin/analytics", authenticate, requireAdmin, async (req, res) => {
   try {
     // Get total programs
     const totalPrograms = await prisma.fitnessProgram.count();
@@ -430,7 +429,7 @@ router.get("/admin/analytics", authAndAdminMiddleware(["ADMIN", "ROOT_ADMIN"]), 
 // ========== ENHANCED PROGRAM ROUTES ==========
 
 // GET /api/fitness/admin/programs/:id/stats - Get program statistics (admin only)
-router.get("/admin/programs/:id/stats", authAndAdminMiddleware(["ADMIN", "ROOT_ADMIN"]), async (req, res) => {
+router.get("/admin/programs/:id/stats", authenticate, requireAdmin, async (req, res) => {
   try {
     const { id } = req.params;
     
@@ -460,7 +459,7 @@ router.get("/admin/programs/:id/stats", authAndAdminMiddleware(["ADMIN", "ROOT_A
 // ========== BULK OPERATIONS ==========
 
 // POST /api/fitness/admin/programs/bulk-toggle - Bulk toggle programs (admin only)
-router.post("/admin/programs/bulk-toggle", authAndAdminMiddleware(["ADMIN", "ROOT_ADMIN"]), async (req, res) => {
+router.post("/admin/programs/bulk-toggle", authenticate, requireAdmin, async (req, res) => {
   try {
     const { programIds, isActive } = req.body;
     
@@ -486,7 +485,7 @@ router.post("/admin/programs/bulk-toggle", authAndAdminMiddleware(["ADMIN", "ROO
 // ========== EXPORT ROUTES ==========
 
 // GET /api/fitness/admin/export/purchases - Export purchases data (admin only)
-router.get("/admin/export/purchases", authAndAdminMiddleware(["ADMIN", "ROOT_ADMIN"]), async (req, res) => {
+router.get("/admin/export/purchases", authenticate, requireAdmin, async (req, res) => {
   try {
     const purchases = await prisma.fitnessPurchase.findMany({
       include: {
@@ -523,7 +522,7 @@ router.get("/admin/export/purchases", authAndAdminMiddleware(["ADMIN", "ROOT_ADM
 });
 
 // GET /api/fitness/admin/export/subscriptions - Export subscriptions data (admin only)
-router.get("/admin/export/subscriptions", authAndAdminMiddleware(["ADMIN", "ROOT_ADMIN"]), async (req, res) => {
+router.get("/admin/export/subscriptions", authenticate, requireAdmin, async (req, res) => {
   try {
     const subscriptions = await prisma.fitnessSubscription.findMany({
       include: {

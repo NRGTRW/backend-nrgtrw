@@ -1,6 +1,6 @@
 import express from "express";
 import { signup, login } from "../controllers/authController.js";
-import { authAndAdminMiddleware } from "../middlewares/authMiddleware.js";
+import { authenticate } from "../middlewares/authMiddleware.js";
 import { getProfile } from "../controllers/profileController.js";
 import {
   resetPassword,
@@ -17,7 +17,7 @@ router.post("/signup", signup);
 router.post("/login", login);
 
 //GET /api/auth/profile - Взимаме данните за профила
-router.get("/profile", authAndAdminMiddleware, getProfile);
+router.get("/profile", authenticate, getProfile);
 
 //POST  /api/auth/reset-password - Изпращаме мейл за възтановяване на парола
 router.post("/reset-password", resetPassword);

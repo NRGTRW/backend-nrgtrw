@@ -1,16 +1,9 @@
 import { PrismaClient } from "@prisma/client";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
-import nodemailer from "nodemailer";
+import transporter from "../utils/smtpConfig.js";
 
 const prisma = new PrismaClient();
-const transporter = nodemailer.createTransport({
-  service: "gmail",
-  auth: {
-    user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASSWORD
-  }
-});
 
 const signup = async (req, res) => {
   try {
@@ -39,6 +32,10 @@ const signup = async (req, res) => {
         otpExpiresAt: new Date(Date.now() + 600000)
       }
     });
+
+    // Debug log for email credentials
+    console.log('EMAIL_USER at signup:', process.env.EMAIL_USER);
+    console.log('EMAIL_PASSWORD at signup:', process.env.EMAIL_PASSWORD);
 
     await transporter.sendMail({
       from: process.env.EMAIL_USER,

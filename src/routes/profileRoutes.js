@@ -6,14 +6,14 @@ import {
   saveProfilePicture
 } from "../controllers/profileController.js";
 import { upload, handleMulterErrors } from "../utils/uploadConfig.js";
-import { authAndAdminMiddleware } from "../middlewares/authMiddleware.js";
+import { authenticate } from "../middlewares/authMiddleware.js";
 
 const router = express.Router();
 
 // POST /api/profile/upload – Качване на нова профилна снимка
 router.post(
   "/upload",
-  authAndAdminMiddleware(),
+  authenticate,
   upload.single("profilePicture"),
   handleMulterErrors,
   uploadProfilePicture
@@ -22,7 +22,7 @@ router.post(
 // PUT /api/profile/save – Запазване на URL на профилната снимка в базата данни
 router.put(
   "/save",
-  authAndAdminMiddleware(),
+  authenticate,
   (req, res, next) => {
     if (!req.body.profilePicture) {
       return res.status(400).json({ error: "Липсва URL на профилната снимка" });
@@ -33,9 +33,9 @@ router.put(
 );
 
 // GET /api/profile – Извличане на информация за профила
-router.get("/", authAndAdminMiddleware(), getProfile);
+router.get("/", authenticate, getProfile);
 
 // PUT /api/profile – Актуализиране на информацията в профила
-router.put("/", authAndAdminMiddleware(), updateProfile);
+router.put("/", authenticate, updateProfile);
 
 export default router;

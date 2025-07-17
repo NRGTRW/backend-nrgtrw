@@ -1,7 +1,6 @@
 import express from "express";
 import { PrismaClient } from "@prisma/client";
-import { protect } from "../middlewares/authMiddleware.js";
-import { authAndAdminMiddleware } from "../middlewares/authMiddleware.js";
+import { authenticate, requireAdmin } from "../middlewares/authMiddleware.js";
 import transporter from '../utils/smtpConfig.js';
 
 const router = express.Router();
@@ -180,7 +179,7 @@ router.get("/stats", async (req, res) => {
 // ========== ADMIN ROUTES ==========
 
 // GET /api/clothing-vote/admin - Get all clothing votes (admin only)
-router.get("/admin", authAndAdminMiddleware(["ADMIN", "ROOT_ADMIN"]), async (req, res) => {
+router.get("/admin", authenticate, requireAdmin, async (req, res) => {
   try {
     const { categoryId, status, page = 1, limit = 50 } = req.query;
     
@@ -225,7 +224,7 @@ router.get("/admin", authAndAdminMiddleware(["ADMIN", "ROOT_ADMIN"]), async (req
 });
 
 // PATCH /api/clothing-vote/admin/:id - Update clothing vote status (admin only)
-router.patch("/admin/:id", authAndAdminMiddleware(["ADMIN", "ROOT_ADMIN"]), async (req, res) => {
+router.patch("/admin/:id", authenticate, requireAdmin, async (req, res) => {
   try {
     const { id } = req.params;
     const { status, message } = req.body;
@@ -255,7 +254,7 @@ router.patch("/admin/:id", authAndAdminMiddleware(["ADMIN", "ROOT_ADMIN"]), asyn
 });
 
 // DELETE /api/clothing-vote/admin/:id - Remove clothing vote (admin only)
-router.delete("/admin/:id", authAndAdminMiddleware(["ADMIN", "ROOT_ADMIN"]), async (req, res) => {
+router.delete("/admin/:id", authenticate, requireAdmin, async (req, res) => {
   try {
     const { id } = req.params;
 

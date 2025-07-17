@@ -6,7 +6,7 @@ import {
 } from "@aws-sdk/client-s3";
 import express from "express";
 import multer from "multer";
-import { authAndAdminMiddleware } from "../middlewares/authMiddleware.js";
+import { authenticate, requireAdmin } from "../middlewares/authMiddleware.js";
 
 const prisma = new PrismaClient();
 const router = express.Router();
@@ -108,7 +108,8 @@ router.get("/:id", async (req, res) => {
  */
 router.post(
   "/",
-  authAndAdminMiddleware(["ADMIN", "ROOT_ADMIN"]),
+  authenticate,
+  requireAdmin,
   upload.any(),
   async (req, res) => {
     try {
@@ -201,7 +202,8 @@ router.post(
  */
 router.put(
   "/:id",
-  authAndAdminMiddleware(["ADMIN", "ROOT_ADMIN"]),
+  authenticate,
+  requireAdmin,
   upload.any(),
   async (req, res) => {
     const { id } = req.params;
@@ -354,7 +356,8 @@ router.put(
 // DELETE Product (Admin Only)
 router.delete(
   "/:id",
-  authAndAdminMiddleware(["ADMIN", "ROOT_ADMIN"]),
+  authenticate,
+  requireAdmin,
   async (req, res) => {
     const { id } = req.params;
     try {
@@ -435,7 +438,8 @@ router.delete(
  */
 router.post(
   "/upload-images",
-  authAndAdminMiddleware(["ADMIN", "ROOT_ADMIN"]),
+  authenticate,
+  requireAdmin,
   upload.any(),
   async (req, res) => {
     try {

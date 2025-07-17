@@ -22,8 +22,19 @@ router.post('/send-request', sendRequestEmail);
 // Chat/Request system endpoints
 router.post('/requests', (req, res, next) => {
   console.log('DEBUG: POST /api/requests route hit');
+  console.log('Headers:', req.headers);
+  console.log('Body:', req.body);
   next();
 }, authenticate, createRequest); // user creates a request
+
+// 405 handler for unsupported methods on /requests
+router.all('/requests', (req, res, next) => {
+  if (req.method !== 'POST' && req.method !== 'GET') {
+    console.warn(`405 Method Not Allowed: ${req.method} /api/requests`);
+    return res.status(405).json({ error: 'Method Not Allowed' });
+  }
+  next();
+});
 router.get('/requests', authenticate, getRequests); // admin: all, user: own
 router.post('/requests/:id/messages', authenticate, sendMessage); // send message in a request thread
 router.get('/requests/:id/messages', authenticate, getMessages); // get all messages for a request

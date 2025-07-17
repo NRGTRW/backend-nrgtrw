@@ -112,6 +112,11 @@ app.get("/api/db-health", async (req, res) => {
     res.status(500).json({ error: "Database connection failed" });
   }
 });
+// Health check for /api/requests
+app.get("/api/requests/health", (req, res) => {
+  console.log("Health check: /api/requests/health hit");
+  res.status(200).json({ success: true, message: "/api/requests route is active" });
+});
 
 // API routes
 app.use("/api/auth", authRoutes);
@@ -197,7 +202,11 @@ app.use((req, res, next) => {
 });
 
 // Global error handler
-app.use(errorMiddleware);
+app.use((err, req, res, next) => {
+  console.error(`[Global Error Handler] ${req.method} ${req.originalUrl}`);
+  console.error(err);
+  errorMiddleware(err, req, res, next);
+});
 
 // Start server
 const PORT = process.env.PORT || 8088;

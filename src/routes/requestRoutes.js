@@ -20,7 +20,10 @@ const router = express.Router();
 router.post('/send-request', sendRequestEmail);
 
 // Chat/Request system endpoints
-router.post('/requests', authenticate, createRequest); // user creates a request
+router.post('/requests', (req, res, next) => {
+  console.log('DEBUG: POST /api/requests route hit');
+  next();
+}, authenticate, createRequest); // user creates a request
 router.get('/requests', authenticate, getRequests); // admin: all, user: own
 router.post('/requests/:id/messages', authenticate, sendMessage); // send message in a request thread
 router.get('/requests/:id/messages', authenticate, getMessages); // get all messages for a request

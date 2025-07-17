@@ -7,11 +7,12 @@ import {
   updatePassword,
   verifyOTP
 } from "../controllers/authController.js";
+import { checkIPBan, abuseLimiter } from '../middlewares/abuseProtection.js';
 
 const router = express.Router();
 
 // POST /api/auth/signup – Регистрация на нов потребител
-router.post("/signup", signup);
+router.post("/signup", checkIPBan, abuseLimiter, signup);
 
 // POST /api/auth/login – Вход в системата
 router.post("/login", login);
@@ -20,7 +21,7 @@ router.post("/login", login);
 router.get("/profile", authenticate, getProfile);
 
 //POST  /api/auth/reset-password - Изпращаме мейл за възтановяване на парола
-router.post("/reset-password", resetPassword);
+router.post("/reset-password", checkIPBan, abuseLimiter, resetPassword);
 
 // POST /api/auth/update-password - Промяна на паролата
 router.post("/update-password", updatePassword);

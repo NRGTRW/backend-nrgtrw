@@ -31,4 +31,6 @@ router.patch('/users/:id/block', authenticate, requireAdmin, adminBlockUser); //
 router.get('/notifications', authenticate, getNotifications); // get notifications for current user
 router.patch('/notifications/:id/read', authenticate, markNotificationRead); // mark notification as read
 
+console.log('requestRoutes loaded in production');
+
 export default router; 

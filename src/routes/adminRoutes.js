@@ -5,6 +5,12 @@ import {
   getUsers,
   deleteUser
 } from "../controllers/profileController.js";
+import {
+  getAnalytics,
+  getOrders,
+  getActivityLog,
+  getSystemHealth
+} from "../controllers/adminController.js";
 
 const router = express.Router();
 
@@ -31,5 +37,32 @@ router.delete(
   requireAdmin,
   deleteUser
 );
+
+// GET /api/admin/analytics – Връща аналитични данни
+router.get(
+  "/admin/analytics",
+  authenticate,
+  requireAdmin,
+  getAnalytics
+);
+
+// GET /api/admin/orders – Връща списък с поръчки
+router.get(
+  "/admin/orders",
+  authenticate,
+  requireAdmin,
+  getOrders
+);
+
+// GET /api/admin/activity-log – Връща лог с активности
+router.get(
+  "/admin/activity-log",
+  authenticate,
+  requireAdmin,
+  getActivityLog
+);
+
+// GET /api/health – Връща здравето на системата
+router.get("/health", getSystemHealth);
 
 export default router;

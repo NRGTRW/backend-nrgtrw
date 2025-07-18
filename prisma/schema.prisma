@@ -16,6 +16,8 @@ model User {
   address        String?
   phone          String?
   profilePicture String?    @db.VarChar(512)
+  avatar         String?    @db.VarChar(64) // emoji or avatar id
+  theme          String?    @db.VarChar(64) // theme id
   createdAt      DateTime   @default(now())
   updatedAt      DateTime   @updatedAt
   isVerified     Boolean    @default(false)
@@ -32,6 +34,7 @@ model User {
   requests       Request[]
   messages       Message[] @relation("UserMessages")
   notifications  Notification[]
+  testimonials   Testimonial[]
 }
 
 model Product {
@@ -309,6 +312,7 @@ model Message {
   senderId  Int
   content   String
   type      String   @default("text") // 'text', 'file', etc.
+  read      Boolean  @default(false)  // Track if message has been read
   createdAt DateTime @default(now())
 }
 
@@ -320,4 +324,27 @@ model Notification {
   content   String
   read      Boolean  @default(false)
   createdAt DateTime @default(now())
+}
+
+model Testimonial {
+  id          Int      @id @default(autoincrement())
+  userId      Int
+  content     String   @db.Text
+  rating      Int      @default(5)
+  isApproved  Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model Feedback {
+  id        Int      @id @default(autoincrement())
+  type      String   // 'bug', 'feature', 'improvement', 'general'
+  message   String   @db.Text
+  email     String?
+  status    String   @default("new") // 'new', 'reviewed', 'in-progress', 'resolved'
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }

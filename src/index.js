@@ -20,6 +20,8 @@ import waitlistRoutes from "./routes/waitlistRoutes.js";
 import clothingVoteRoutes from "./routes/clothingVoteRoutes.js";
 import { PrismaClient } from "@prisma/client";
 import requestRoutes from './routes/requestRoutes.js';
+import testimonialRoutes from './routes/testimonialRoutes.js';
+import feedbackRoutes from './routes/feedbackRoutes.js';
 import http from 'http';
 import { Server as SocketIOServer } from 'socket.io';
 
@@ -39,9 +41,56 @@ const io = new SocketIOServer(server, {
   },
 });
 app.set('io', io);
+
+// Socket.IO event handlers
 io.on('connection', (socket) => {
   console.log('Socket.IO client connected:', socket.id);
+  
+  // Join user room
+  socket.on('join', ({ room }) => {
+    socket.join(room);
+    console.log(`User joined room: ${room}`);
+  });
+  
+  // Handle typing indicators
+  socket.on('start_typing', ({ requestId, userId }) => {
+    // Get user info for typing indicator
+    socket.userId = userId;
+    socket.requestId = requestId;
+    
+    // Broadcast to other users in the same request
+    socket.broadcast.emit('user_typing', { 
+      requestId, 
+      userId, 
+      userName: socket.userName || 'Someone' 
+    });
+  });
+  
+  socket.on('stop_typing', ({ requestId, userId }) => {
+    // Broadcast to other users in the same request
+    socket.broadcast.emit('user_stopped_typing', { 
+      requestId, 
+      userId, 
+      userName: socket.userName || 'Someone' 
+    });
+  });
+  
+  // Handle message status updates
+  socket.on('message_delivered', ({ messageId, requestId }) => {
+    // Broadcast delivery confirmation
+    socket.broadcast.emit('message_delivered', { messageId });
+  });
+  
+  socket.on('message_read', ({ messageId, requestId }) => {
+    // Broadcast read receipt
+    socket.broadcast.emit('message_read', { messageId });
+  });
+  
+  socket.on('disconnect', () => {
+    console.log('Socket.IO client disconnected:', socket.id);
+  });
 });
+
 const prisma = new PrismaClient();
 
 // CORS Configuration
@@ -132,6 +181,8 @@ app.use("/api/fitness", fitnessRoutes);
 app.use("/api/waitlist", waitlistRoutes);
 app.use("/api/clothing-vote", clothingVoteRoutes);
 app.use('/api', requestRoutes);
+app.use('/api/testimonials', testimonialRoutes);
+app.use('/api/feedback', feedbackRoutes);
 
 // Test DB route
 app.get("/api/test-db", async (req, res) => {

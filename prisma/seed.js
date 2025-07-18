@@ -5,6 +5,7 @@ import { S3Client, HeadObjectCommand, PutObjectCommand } from "@aws-sdk/client-s
 import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
+import bcrypt from 'bcrypt';
 
 // Set up __dirname for ES modules.
 const __filename = fileURLToPath(import.meta.url);
@@ -646,10 +647,33 @@ const availableProducts = [
   }
 ];
 
+// Seed a root admin user if not exists
+async function seedRootAdmin() {
+  const email = process.env.EMAIL_USER || 'root@admin.com';
+  const password = process.env.EMAIL_PASSWORD || 'RootAdmin123!'; // Change after first login
+  const name = process.env.ROOT_ADMIN_NAME || 'Root Admin';
+  const hashedPassword = await bcrypt.hash(password, 10);
+  const existing = await prisma.user.findUnique({ where: { email } });
+  if (!existing) {
+    await prisma.user.create({
+      data: {
+        email,
+        password: hashedPassword,
+        name,
+        role: 'ROOT_ADMIN',
+        isVerified: true
+      }
+    });
+    console.log(`✅ Seeded root admin: ${email} / ${password}`);
+  } else {
+    console.log(`ℹ️ Root admin already exists: ${email}`);
+  }
+}
+
 // Main seeding function.
 const main = async () => {
   console.log("🌱 Seeding products only...");
-
+  await seedRootAdmin();
   // Ensure all product image files are in S3.
   await seedS3Files();
   // Seed sizes and categories (required for products).

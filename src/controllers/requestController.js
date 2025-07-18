@@ -279,17 +279,58 @@ export const getNotifications = async (req, res) => {
 
 export const markNotificationRead = async (req, res) => {
   const { id } = req.params;
-  if (!id) {
-    return res.status(400).json({ error: 'Notification id is required.' });
-  }
+  const userId = req.user.id;
   try {
-    const updated = await prisma.notification.update({
-      where: { id: Number(id) },
+    await prisma.notification.updateMany({
+      where: { id: Number(id), userId },
       data: { read: true },
     });
-    res.json(updated);
+    res.json({ success: true });
   } catch (error) {
     console.error('Error marking notification as read:', error);
     res.status(500).json({ error: 'Failed to mark notification as read.' });
+  }
+};
+
+export const markMessagesAsRead = async (req, res) => {
+  const { id: requestId } = req.params;
+  const { messageIds } = req.body;
+  const userId = req.user.id;
+  const role = req.user.role;
+
+  if (!messageIds || !Array.isArray(messageIds)) {
+    return res.status(400).json({ error: 'messageIds array is required.' });
+  }
+
+  try {
+    // Verify user has access to this request
+    const request = await prisma.request.findUnique({ where: { id: Number(requestId) } });
+    if (!request) return res.status(404).json({ error: 'Request not found.' });
+    
+    if (role !== 'admin' && role !== 'ADMIN' && role !== 'ROOT_ADMIN' && request.userId !== userId) {
+      return res.status(403).json({ error: 'Not authorized to mark messages as read for this request.' });
+    }
+
+    // Mark messages as read
+    await prisma.message.updateMany({
+      where: { 
+        id: { in: messageIds.map(id => Number(id)) },
+        requestId: Number(requestId)
+      },
+      data: { read: true },
+    });
+
+    // Emit real-time event to notify other participants
+    const io = req.app.get('io');
+    const otherUserId = role === 'admin' || role === 'ADMIN' || role === 'ROOT_ADMIN' ? request.userId : null;
+    
+    if (otherUserId) {
+      io.to(`user_${otherUserId}`).emit('message_read', { messageIds });
+    }
+
+    res.json({ success: true });
+  } catch (error) {
+    console.error('Error marking messages as read:', error);
+    res.status(500).json({ error: 'Failed to mark messages as read.' });
   }
 }; 

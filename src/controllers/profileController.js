@@ -55,7 +55,9 @@ export const getProfile = async (req, res) => {
       role: user.role,
       address: user.address ? decrypt(user.address) : null,
       phone: user.phone ? decrypt(user.phone) : null,
-      profilePicture: user.profilePicture || null
+      profilePicture: user.profilePicture || null,
+      avatar: user.avatar || null,
+      theme: user.theme || null
     });
   } catch (error) {
     console.error("Failed to load profile:", error.message);
@@ -66,7 +68,7 @@ export const getProfile = async (req, res) => {
 export const updateProfile = async (req, res) => {
   try {
     const userId = req.user.id;
-    const { name, address, phone, profilePicture } = req.body;
+    const { name, address, phone, profilePicture, avatar, theme } = req.body;
 
     const updatedUser = await prisma.user.update({
       where: { id: userId },
@@ -74,7 +76,9 @@ export const updateProfile = async (req, res) => {
         name,
         address: address ? encrypt(address) : undefined,
         phone: phone ? encrypt(phone) : undefined,
-        profilePicture
+        profilePicture,
+        avatar,
+        theme
       }
     });
 

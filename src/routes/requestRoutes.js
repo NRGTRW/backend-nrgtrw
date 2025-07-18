@@ -10,7 +10,8 @@ import {
   adminBlockUser,
   getNotifications,
   markNotificationRead,
-  adminDeleteRequest
+  adminDeleteRequest,
+  markMessagesAsRead
 } from '../controllers/requestController.js';
 import { authenticate, requireAdmin } from '../middlewares/authMiddleware.js';
 
@@ -38,6 +39,7 @@ router.all('/requests', (req, res, next) => {
 router.get('/requests', authenticate, getRequests); // admin: all, user: own
 router.post('/requests/:id/messages', authenticate, sendMessage); // send message in a request thread
 router.get('/requests/:id/messages', authenticate, getMessages); // get all messages for a request
+router.patch('/requests/:id/messages/read', authenticate, markMessagesAsRead); // mark messages as read
 router.patch('/requests/:id/status', authenticate, requireAdmin, adminUpdateRequestStatus); // admin: approve/reject/close
 router.delete('/requests/:id', authenticate, requireAdmin, adminDeleteRequest);
 router.get('/users', authenticate, requireAdmin, getUsers); // admin: list users

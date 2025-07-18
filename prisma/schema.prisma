@@ -36,6 +36,7 @@ model User {
   payments             Payment[]
   requests             Request[]
   wishlist             Wishlist[]
+  feedbacks            Feedback[]
 }
 
 model Product {
@@ -303,6 +304,17 @@ model Notification {
   user      User     @relation(fields: [userId], references: [id])
 
   @@index([userId], map: "Notification_userId_fkey")
+}
+
+model Feedback {
+  id        Int      @id @default(autoincrement())
+  userId    Int?
+  user      User?    @relation(fields: [userId], references: [id])
+  type      String
+  message   String
+  email     String?
+  status    String?
+  createdAt DateTime @default(now())
 }
 
 enum Role {

@@ -1,11 +1,14 @@
 import express from 'express';
-import { PrismaClient } from '@prisma/client';
+import prisma from '../prisma/client.js';
 
 const router = express.Router();
-const prisma = new PrismaClient();
 
 // Submit feedback (public endpoint)
 router.post('/', async (req, res) => {
+  // Debug: Log key environment variables
+  console.log('DATABASE_URL:', process.env.DATABASE_URL);
+  console.log('EMAIL_USER:', process.env.EMAIL_USER);
+  console.log('NODE_ENV:', process.env.NODE_ENV);
   try {
     const { type, message, email } = req.body;
 
@@ -31,10 +34,15 @@ router.post('/', async (req, res) => {
       data: feedback
     });
   } catch (error) {
+    // Debug: Log full error stack
     console.error('Error submitting feedback:', error);
+    if (error.stack) {
+      console.error('Error stack:', error.stack);
+    }
     res.status(500).json({
       success: false,
-      message: 'Failed to submit feedback'
+      message: 'Failed to submit feedback',
+      details: process.env.NODE_ENV === 'production' ? undefined : error.message
     });
   }
 });

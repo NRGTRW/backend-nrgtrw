@@ -24,6 +24,8 @@ import testimonialRoutes from './routes/testimonialRoutes.js';
 import feedbackRoutes from './routes/feedbackRoutes.js';
 import http from 'http';
 import { Server as SocketIOServer } from 'socket.io';
+import passport from './utils/passport.js';
+import session from 'express-session';
 
 dotenv.config();
 
@@ -264,3 +266,12 @@ const PORT = process.env.PORT || 8088;
 server.listen(PORT, () => {
   console.log(`Server running with Socket.IO on port ${PORT}`);
 });
+
+app.use(session({
+  secret: process.env.SESSION_SECRET || 'supersecret',
+  resave: false,
+  saveUninitialized: false,
+  cookie: { secure: false }, // Set to true if using HTTPS
+}));
+app.use(passport.initialize());
+app.use(passport.session());

@@ -140,7 +140,7 @@ const seedSizes = async () => {
 // Seed product categories.
 const seedCategories = async () => {
   try {
-    const categories = ["Elegance", "Pump Covers", "Confidence", "Available"];
+    const categories = ["Elegance", "Pump Covers", "Confidence", "Available", "Accessories"];
     for (const category of categories) {
       await prisma.category.upsert({
         where: { name: category },

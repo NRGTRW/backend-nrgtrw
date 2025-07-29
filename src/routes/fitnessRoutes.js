@@ -176,7 +176,8 @@ router.post("/admin/programs", authenticate, requireAdmin, async (req, res) => {
       duration,
       difficulty,
       equipment,
-      goals
+      goals,
+      waitlistMode
     } = req.body;
     
     const program = await prisma.fitnessProgram.create({
@@ -195,7 +196,8 @@ router.post("/admin/programs", authenticate, requireAdmin, async (req, res) => {
         duration: duration || null,
         difficulty: difficulty || null,
         equipment: equipment || null,
-        goals: goals || null
+        goals: goals || null,
+        waitlistMode: waitlistMode !== undefined ? waitlistMode : false
       }
     });
     
@@ -225,7 +227,8 @@ router.put("/admin/programs/:id", authenticate, requireAdmin, async (req, res) =
       duration,
       difficulty,
       equipment,
-      goals
+      goals,
+      waitlistMode
     } = req.body;
     
     const program = await prisma.fitnessProgram.update({
@@ -245,7 +248,8 @@ router.put("/admin/programs/:id", authenticate, requireAdmin, async (req, res) =
         duration: duration || null,
         difficulty: difficulty || null,
         equipment: equipment || null,
-        goals: goals || null
+        goals: goals || null,
+        waitlistMode: waitlistMode !== undefined ? waitlistMode : false
       }
     });
     

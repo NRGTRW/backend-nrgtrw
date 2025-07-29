@@ -194,6 +194,7 @@ model FitnessProgram {
   difficulty       String?
   equipment        String?           @db.Text
   goals            String?           @db.Text
+  waitlistMode     Boolean           @default(false)
   purchases        FitnessPurchase[]
   waitlist         FitnessWaitlist[]
 }

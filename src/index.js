@@ -37,7 +37,7 @@ app.set('trust proxy', 1); // Trust first proxy (for DigitalOcean, Heroku, etc.)
 const server = http.createServer(app);
 const io = new SocketIOServer(server, {
   cors: {
-    origin: 'http://localhost:5173',
+    origin: ['http://localhost:5173', 'http://localhost:5174', 'http://localhost:3000'],
     methods: ['GET', 'POST', 'PATCH'],
     credentials: true,
   },
@@ -99,6 +99,7 @@ const prisma = new PrismaClient();
 const allowedOrigins = [
   "http://localhost:5173",
   "http://localhost:5174",
+  "http://localhost:3000",
   "https://api.nrgtrw.com",
   "https://www.nrgtrw.com",
   "https://nrgtrw.com"

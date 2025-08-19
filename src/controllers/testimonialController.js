@@ -39,10 +39,11 @@ export const createTestimonial = async (req, res) => {
 export const getTestimonials = async (req, res) => {
   try {
     const { approved } = req.query;
-    const isAdmin = req.user?.role === 'ADMIN' || req.user?.role === 'ROOT_ADMIN';
+    const isAdmin =
+      req.user?.role === "ADMIN" || req.user?.role === "ROOT_ADMIN";
 
     const where = {};
-    if (!isAdmin || approved === 'true') {
+    if (!isAdmin || approved === "true") {
       where.isApproved = true;
     }
 
@@ -57,7 +58,7 @@ export const getTestimonials = async (req, res) => {
         }
       },
       orderBy: {
-        createdAt: 'desc'
+        createdAt: "desc"
       }
     });
 
@@ -150,4 +151,4 @@ export const approveTestimonial = async (req, res) => {
     console.error("Error approving testimonial:", error);
     res.status(500).json({ error: "Failed to approve testimonial" });
   }
-}; 
+};

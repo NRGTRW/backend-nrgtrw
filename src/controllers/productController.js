@@ -6,9 +6,9 @@ const prisma = new PrismaClient();
 const s3 = new S3Client({
   credentials: {
     accessKeyId: process.env.AWS_ACCESS_KEY_ID,
-    secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
+    secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY
   },
-  region: process.env.AWS_REGION || "eu-central-1",
+  region: process.env.AWS_REGION || "eu-central-1"
 });
 
 export const createProduct = async (req, res) => {
@@ -21,7 +21,7 @@ export const createProduct = async (req, res) => {
     stock,
     categoryId,
     sizes,
-    colors,
+    colors
   } = req.body;
 
   const imagePaths = [];
@@ -32,7 +32,7 @@ export const createProduct = async (req, res) => {
   const colorData = colors.map((color, index) => ({
     colorName: color.colorName,
     imageUrl: imagePaths[index * 2] || "temp-color-image",
-    hoverImage: imagePaths[index * 2 + 1] || "temp-hover-image",
+    hoverImage: imagePaths[index * 2 + 1] || "temp-hover-image"
   }));
 
   const fallbackMain = imagePaths[0] || "temp-main-image";
@@ -44,8 +44,8 @@ export const createProduct = async (req, res) => {
       category: { connect: { id: Number(categoryId) } },
       sizes: {
         create: sizes.map((sizeId) => ({
-          size: { connect: { id: sizeId } },
-        })),
+          size: { connect: { id: sizeId } }
+        }))
       },
       colors: { create: colorData },
       translations: {
@@ -54,22 +54,22 @@ export const createProduct = async (req, res) => {
             language: "en",
             name: enName,
             description: enDescription,
-            imageUrl: fallbackMain,
+            imageUrl: fallbackMain
           },
           {
             language: "bg",
             name: bgName,
             description: bgDescription,
-            imageUrl: fallbackMain,
-          },
-        ],
-      },
-    },
+            imageUrl: fallbackMain
+          }
+        ]
+      }
+    }
   });
 
   res.status(201).json({
     message: "Product created successfully",
-    data: createdProduct,
+    data: createdProduct
   });
 };
 
@@ -80,8 +80,8 @@ export const getAllProducts = async (req, res) => {
       include: {
         sizes: { include: { size: true } },
         colors: true,
-        category: true,
-      },
+        category: true
+      }
     });
     console.log("✅ Products fetched:", products);
     res.status(200).json(products);
@@ -99,15 +99,15 @@ export const getProductById = async (req, res) => {
       include: {
         sizes: { include: { size: true } },
         colors: true,
-        category: true,
-      },
+        category: true
+      }
     });
     if (!product) {
       return res.status(404).json({ error: "Product not found" });
     }
     const formattedProduct = {
       ...product,
-      sizes: product.sizes.map((ps) => ps.size),
+      sizes: product.sizes.map((ps) => ps.size)
     };
 
     return res.status(200).json(formattedProduct);
@@ -126,7 +126,7 @@ export const deleteProduct = async (req, res) => {
     console.log(`Received DELETE request for product with ID: ${productId}`);
 
     const product = await prisma.product.findUnique({
-      where: { id: productId },
+      where: { id: productId }
     });
 
     if (!product) {
@@ -139,8 +139,8 @@ export const deleteProduct = async (req, res) => {
       product.images && Array.isArray(product.images)
         ? product.images
         : product.imageUrl
-        ? [product.imageUrl]
-        : [];
+          ? [product.imageUrl]
+          : [];
     console.log(`Images to delete:`, imagesToDelete);
 
     for (const imageUrl of imagesToDelete) {
@@ -151,7 +151,7 @@ export const deleteProduct = async (req, res) => {
         await s3.send(
           new DeleteObjectCommand({
             Bucket: process.env.AWS_S3_BUCKET_NAME,
-            Key: key,
+            Key: key
           })
         );
         console.log(`Successfully deleted image: ${imageUrl}`);
@@ -160,12 +160,12 @@ export const deleteProduct = async (req, res) => {
       }
     }
     const deletedProduct = await prisma.product.delete({
-      where: { id: productId },
+      where: { id: productId }
     });
     console.log(`Product deleted successfully:`, deletedProduct);
     res.status(200).json({
       success: true,
-      message: "Product deleted successfully",
+      message: "Product deleted successfully"
     });
   } catch (error) {
     console.error("❌ Error deleting product:", error.message);

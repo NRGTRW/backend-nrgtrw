@@ -1,4 +1,4 @@
-import rateLimit from 'express-rate-limit';
+import rateLimit from "express-rate-limit";
 
 // In-memory store for banned IPs (for production, use Redis or DB)
 const bannedIPs = new Map();
@@ -21,7 +21,9 @@ function isIPBanned(ip) {
 export function checkIPBan(req, res, next) {
   const ip = req.ip;
   if (isIPBanned(ip)) {
-    return res.status(429).json({ error: 'Too many invalid attempts. Try again in 24 hours.' });
+    return res
+      .status(429)
+      .json({ error: "Too many invalid attempts. Try again in 24 hours." });
   }
   next();
 }
@@ -32,6 +34,8 @@ export const abuseLimiter = rateLimit({
   max: 5, // limit each IP to 5 requests per windowMs
   handler: (req, res) => {
     banIP(req.ip);
-    res.status(429).json({ error: 'Too many invalid attempts. Try again in 24 hours.' });
+    res
+      .status(429)
+      .json({ error: "Too many invalid attempts. Try again in 24 hours." });
   }
-}); 
+});

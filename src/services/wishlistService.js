@@ -14,18 +14,18 @@ export async function getWishlistByUser(userId) {
             colors: true,
             sizes: {
               include: {
-                size: true,
-              },
+                size: true
+              }
             },
-            translations: true, // Include translations to get product name and imageUrl
-          },
-        },
-      },
+            translations: true // Include translations to get product name and imageUrl
+          }
+        }
+      }
     });
     return wishlistItems;
   } catch (error) {
-    console.error('Error fetching wishlist:', error);
-    throw new Error('Database error while fetching wishlist.');
+    console.error("Error fetching wishlist:", error);
+    throw new Error("Database error while fetching wishlist.");
   }
 }
 

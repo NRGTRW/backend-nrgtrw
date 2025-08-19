@@ -4,28 +4,33 @@ import { PrismaClient } from "@prisma/client";
 import dotenv from "dotenv";
 import nodemailer from "nodemailer";
 
-dotenv.config();
+dotenv.config({ path: ".env.local" });
 
 const router = express.Router();
 const prisma = new PrismaClient();
 
 // Initialize Stripe using the secret key
 const stripeSecretKey = process.env.STRIPE_SECRET_KEY;
+let stripe = null;
+
 if (!stripeSecretKey) {
-  console.error("Missing STRIPE_SECRET_KEY in environment variables.");
-  process.exit(1);
+  console.warn(
+    "Missing STRIPE_SECRET_KEY in environment variables. Stripe functionality will be disabled."
+  );
+} else {
+  stripe = new Stripe(stripeSecretKey, {
+    apiVersion: "2022-11-15"
+  });
 }
-const stripe = new Stripe(stripeSecretKey, {
-  apiVersion: "2022-11-15",
-});
 
 // Use the first URL from CLIENT_URL (if it's comma-separated)
 const clientUrl = process.env.CLIENT_URL
   ? process.env.CLIENT_URL.split(",")[0].trim()
-  : "";
-if (!clientUrl) {
-  console.error("Missing CLIENT_URL in environment variables.");
-  process.exit(1);
+  : "http://localhost:5174";
+if (!process.env.CLIENT_URL) {
+  console.warn(
+    "Missing CLIENT_URL in environment variables. Using default: http://localhost:5174"
+  );
 }
 
 const transporter = nodemailer.createTransport({
@@ -62,7 +67,7 @@ router.post("/create-checkout-session", async (req, res) => {
 
     const line_items = [];
     let createdPrice = null; // Declare price variable in outer scope
-    
+
     if (type === "fitness_one_time") {
       // Handle fitness program checkout as virtual product
       const s3BaseUrl = "https://nrgtrw-images.s3.eu-central-1.amazonaws.com/";
@@ -78,41 +83,41 @@ router.post("/create-checkout-session", async (req, res) => {
             product_data: {
               name: item.name || "Fitness Program",
               images: imageUrl ? [imageUrl] : [],
-              description: item.description || "Premium fitness program.",
+              description: item.description || "Premium fitness program."
             },
-            unit_amount: Math.round((item.price || 50) * 100), // Use item price or default to $50
+            unit_amount: Math.round((item.price || 50) * 100) // Use item price or default to $50
           },
-          quantity: item.quantity,
+          quantity: item.quantity
         });
       }
     } else if (type === "fitness_subscription") {
       // Handle fitness subscription checkout
       const subscription = req.body.subscription;
-      
+
       // Check if items have a priceId (frontend is sending existing price)
       if (items && items.length > 0 && items[0].priceId) {
         // Use existing price ID from frontend
         line_items.push({
           price: items[0].priceId,
-          quantity: 1,
+          quantity: 1
         });
         createdPrice = { id: items[0].priceId }; // Set for database record
       } else {
         // Create a new Stripe price for the subscription
         createdPrice = await stripe.prices.create({
           unit_amount: Math.round((subscription.price || 100) * 100), // Default $100/month
-          currency: 'usd',
+          currency: "usd",
           recurring: {
-            interval: subscription.interval || 'month',
+            interval: subscription.interval || "month"
           },
           product_data: {
-            name: subscription.name || "All Access Fitness Subscription",
-          },
+            name: subscription.name || "All Access Fitness Subscription"
+          }
         });
-        
+
         line_items.push({
           price: createdPrice.id, // Use the created price ID
-          quantity: 1,
+          quantity: 1
         });
       }
     } else {
@@ -120,13 +125,21 @@ router.post("/create-checkout-session", async (req, res) => {
       for (const item of items) {
         const product = await prisma.product.findUnique({
           where: { id: item.productId },
-          include: { translations: true },
+          include: { translations: true }
         });
-        if (!product || !product.translations || product.translations.length === 0) {
-          console.error(`No translations found for product id: ${item.productId}`);
+        if (
+          !product ||
+          !product.translations ||
+          product.translations.length === 0
+        ) {
+          console.error(
+            `No translations found for product id: ${item.productId}`
+          );
           return res
             .status(404)
-            .json({ error: `Product translation not found: ${item.productId}` });
+            .json({
+              error: `Product translation not found: ${item.productId}`
+            });
         }
         // Look for an English translation.
         let translation = product.translations.find((t) => t.language === "en");
@@ -137,18 +150,20 @@ router.post("/create-checkout-session", async (req, res) => {
           translation = {
             name: product.translations[0].name, // Fallback to first available translation
             description: "Description not available in English.",
-            imageUrl: "images/default.png", // Fallback relative path
+            imageUrl: "images/default.png" // Fallback relative path
           };
         }
 
         // Determine the image URL.
         let imageUrl = translation.imageUrl;
-        const s3BaseUrl = "https://nrgtrw-images.s3.eu-central-1.amazonaws.com/";
+        const s3BaseUrl =
+          "https://nrgtrw-images.s3.eu-central-1.amazonaws.com/";
         if (imageUrl && !imageUrl.startsWith("http")) {
           imageUrl = `${s3BaseUrl}${imageUrl.startsWith("/") ? imageUrl.slice(1) : imageUrl}`;
         }
         if (imageUrl.includes("WhiteShirt")) {
-          imageUrl = "https://nrgtrw-images.s3.eu-central-1.amazonaws.com/images/WhiteCroppedTurtuleneck.webp";
+          imageUrl =
+            "https://nrgtrw-images.s3.eu-central-1.amazonaws.com/images/WhiteCroppedTurtuleneck.webp";
         }
         // Patch: Only include image if valid HTTPS URL, else use default
         const isValidImageUrl = imageUrl && imageUrl.startsWith("https://");
@@ -162,19 +177,26 @@ router.post("/create-checkout-session", async (req, res) => {
             product_data: {
               name: translation.name,
               images: [safeImageUrl],
-              description: translation.description,
+              description: translation.description
             },
-            unit_amount: Math.round(product.price * 100),
+            unit_amount: Math.round(product.price * 100)
           },
-          quantity: item.quantity,
+          quantity: item.quantity
         });
       }
     }
     console.log("Constructed line items:", JSON.stringify(line_items, null, 2));
     if (line_items.length > 0) {
       line_items.forEach((item, idx) => {
-        if (item.price_data && item.price_data.product_data && item.price_data.product_data.images) {
-          console.log(`Line item [${idx}] image:`, item.price_data.product_data.images[0]);
+        if (
+          item.price_data &&
+          item.price_data.product_data &&
+          item.price_data.product_data.images
+        ) {
+          console.log(
+            `Line item [${idx}] image:`,
+            item.price_data.product_data.images[0]
+          );
         }
       });
     }
@@ -186,7 +208,7 @@ router.post("/create-checkout-session", async (req, res) => {
       line_items,
       success_url: `${clientUrl}/checkout-success?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${clientUrl}/checkout-cancelled`,
-      metadata: { userId: userId.toString() },
+      metadata: { userId: userId.toString() }
     };
 
     // Set mode based on checkout type
@@ -208,9 +230,9 @@ router.post("/create-checkout-session", async (req, res) => {
             userId: userId,
             programId: item.programId || item.productId || item.id, // Handle multiple possible field names
             stripeSessionId: session.id,
-            amount: (item.price || 50),
-            status: "PENDING",
-          },
+            amount: item.price || 50,
+            status: "PENDING"
+          }
         });
       }
       console.log("Fitness purchase record created for session:", session.id);
@@ -221,10 +243,13 @@ router.post("/create-checkout-session", async (req, res) => {
           userId: userId,
           stripeSessionId: session.id,
           status: "PENDING",
-          stripePriceId: createdPrice.id, // Use the price ID we created above
-        },
+          stripePriceId: createdPrice.id // Use the price ID we created above
+        }
       });
-      console.log("Fitness subscription record created for session:", session.id);
+      console.log(
+        "Fitness subscription record created for session:",
+        session.id
+      );
     } else {
       // Default: Clothing/products from DB
       const order = await prisma.order.create({
@@ -233,37 +258,41 @@ router.post("/create-checkout-session", async (req, res) => {
           orderItems: {
             create: items.map((item) => ({
               productId: item.productId,
-              quantity: item.quantity,
-            })),
-          },
-        },
+              quantity: item.quantity
+            }))
+          }
+        }
       });
       console.log("Order created with id:", order.id);
 
       // Check for Temu/mock product in the order
-      const hasTemuProduct = items.some(item => item.productId === 999999);
+      const hasTemuProduct = items.some((item) => item.productId === 999999);
       if (hasTemuProduct) {
         // Fetch user details
         const user = await prisma.user.findUnique({ where: { id: userId } });
         // Compose email
-        const temuItems = items.filter(item => item.productId === 999999);
-        const temuDetails = temuItems.map(item => `
+        const temuItems = items.filter((item) => item.productId === 999999);
+        const temuDetails = temuItems
+          .map(
+            (item) => `
           <li>
             <strong>${item.name}</strong><br/>
-            Color: ${item.selectedColor || '-'}<br/>
-            Size: ${item.selectedSize || '-'}<br/>
+            Color: ${item.selectedColor || "-"}<br/>
+            Size: ${item.selectedSize || "-"}<br/>
             Quantity: ${item.quantity}<br/>
           </li>
-        `).join('');
+        `
+          )
+          .join("");
         await transporter.sendMail({
           from: process.env.EMAIL_USER,
           to: process.env.EMAIL_USER, // Send to admin
           subject: "New Temu/Mock Product Order",
           html: `
             <h2>New Temu/Mock Product Order</h2>
-            <p><strong>User:</strong> ${user?.name || '-'} (${user?.email || '-'})</p>
-            <p><strong>Address:</strong> ${user?.address ? '[Encrypted]' : '-'}</p>
-            <p><strong>Phone:</strong> ${user?.phone ? '[Encrypted]' : '-'}</p>
+            <p><strong>User:</strong> ${user?.name || "-"} (${user?.email || "-"})</p>
+            <p><strong>Address:</strong> ${user?.address ? "[Encrypted]" : "-"}</p>
+            <p><strong>Phone:</strong> ${user?.phone ? "[Encrypted]" : "-"}</p>
             <ul>${temuDetails}</ul>
             <p>Please fulfill this order manually on Temu and update the user accordingly.</p>
           `
@@ -278,16 +307,20 @@ router.post("/create-checkout-session", async (req, res) => {
             orderId: order.id,
             userId: userId,
             stripeSessionId: session.id,
-            amount: line_items.reduce(
-              (acc, item) => acc + item.price_data.unit_amount * item.quantity,
-              0
-            ) / 100,
-            status: "PENDING",
-          },
+            amount:
+              line_items.reduce(
+                (acc, item) =>
+                  acc + item.price_data.unit_amount * item.quantity,
+                0
+              ) / 100,
+            status: "PENDING"
+          }
         });
         console.log("Payment record created for session:", session.id);
       } else {
-        console.warn("Payment model not defined in Prisma schema. Skipping payment record creation.");
+        console.warn(
+          "Payment model not defined in Prisma schema. Skipping payment record creation."
+        );
       }
     }
 
@@ -326,36 +359,46 @@ router.post(
           // Update payment status
           await prisma.payment.update({
             where: { stripeSessionId: session.id },
-            data: { status: "COMPLETED" },
+            data: { status: "COMPLETED" }
           });
-          console.log("Payment status updated to COMPLETED for session:", session.id);
-          
+          console.log(
+            "Payment status updated to COMPLETED for session:",
+            session.id
+          );
+
           // Check if this is a fitness program purchase
           const fitnessPurchase = await prisma.fitnessPurchase.findFirst({
             where: { stripeSessionId: session.id }
           });
-          
+
           if (fitnessPurchase) {
             // Update fitness purchase status
             await prisma.fitnessPurchase.update({
               where: { id: fitnessPurchase.id },
               data: { status: "COMPLETED" }
             });
-            console.log("Fitness purchase status updated to COMPLETED for session:", session.id);
+            console.log(
+              "Fitness purchase status updated to COMPLETED for session:",
+              session.id
+            );
           }
-          
+
           // Check if this is a fitness subscription
-          const fitnessSubscription = await prisma.fitnessSubscription.findFirst({
-            where: { stripeSessionId: session.id }
-          });
-          
+          const fitnessSubscription =
+            await prisma.fitnessSubscription.findFirst({
+              where: { stripeSessionId: session.id }
+            });
+
           if (fitnessSubscription) {
             // Update fitness subscription status
             await prisma.fitnessSubscription.update({
               where: { id: fitnessSubscription.id },
               data: { status: "COMPLETED" }
             });
-            console.log("Fitness subscription status updated to COMPLETED for session:", session.id);
+            console.log(
+              "Fitness subscription status updated to COMPLETED for session:",
+              session.id
+            );
           }
         } catch (err) {
           console.error("Error updating payment status:", err);
@@ -371,9 +414,9 @@ router.post(
 function encodeS3Url(url) {
   if (!url) return url;
   try {
-    const parts = url.split('/');
+    const parts = url.split("/");
     const filename = parts.pop();
-    return [...parts, encodeURIComponent(filename)].join('/');
+    return [...parts, encodeURIComponent(filename)].join("/");
   } catch (e) {
     return url;
   }

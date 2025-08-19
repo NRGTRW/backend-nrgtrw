@@ -2,7 +2,7 @@ import { PrismaClient } from "@prisma/client";
 import {
   S3Client,
   DeleteObjectCommand,
-  PutObjectCommand,
+  PutObjectCommand
 } from "@aws-sdk/client-s3";
 import express from "express";
 import multer from "multer";
@@ -19,9 +19,9 @@ const upload = multer({ storage });
 const s3 = new S3Client({
   credentials: {
     accessKeyId: process.env.AWS_ACCESS_KEY_ID,
-    secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
+    secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY
   },
-  region: process.env.AWS_REGION || "eu-central-1",
+  region: process.env.AWS_REGION || "eu-central-1"
 });
 
 // Helper function: Upload a file to S3.
@@ -30,7 +30,7 @@ async function uploadFileToS3(file, folder) {
   const uploadParams = {
     Bucket: process.env.AWS_S3_BUCKET_NAME,
     Key: `${folder}/${Date.now()}_${file.originalname}`,
-    Body: file.buffer,
+    Body: file.buffer
   };
 
   const command = new PutObjectCommand(uploadParams);
@@ -56,8 +56,8 @@ router.get("/", async (req, res) => {
         sizes: { include: { size: true } },
         colors: true,
         category: true,
-        translations: true, // Include translations for frontend/editing
-      },
+        translations: true // Include translations for frontend/editing
+      }
     });
     console.log("✅ Products fetched:", products);
     res.status(200).json(products);
@@ -77,15 +77,15 @@ router.get("/:id", async (req, res) => {
         sizes: { include: { size: true } },
         colors: true,
         category: true,
-        translations: true, // Include translations
-      },
+        translations: true // Include translations
+      }
     });
     if (!product) {
       return res.status(404).json({ error: "Product not found" });
     }
     const formattedProduct = {
       ...product,
-      sizes: product.sizes.map((ps) => ps.size),
+      sizes: product.sizes.map((ps) => ps.size)
     };
 
     return res.status(200).json(formattedProduct);
@@ -106,93 +106,87 @@ router.get("/:id", async (req, res) => {
  *
  * Creates nested translation records for English and Bulgarian.
  */
-router.post(
-  "/",
-  authenticate,
-  requireAdmin,
-  upload.any(),
-  async (req, res) => {
-    try {
-      let {
-        enName,
-        enDescription,
-        bgName,
-        bgDescription,
-        price,
-        categoryId,
-        sizes,
-        colors,
-      } = req.body;
-      if (typeof sizes === "string") sizes = JSON.parse(sizes);
-      if (typeof colors === "string") colors = JSON.parse(colors);
+router.post("/", authenticate, requireAdmin, upload.any(), async (req, res) => {
+  try {
+    let {
+      enName,
+      enDescription,
+      bgName,
+      bgDescription,
+      price,
+      categoryId,
+      sizes,
+      colors
+    } = req.body;
+    if (typeof sizes === "string") sizes = JSON.parse(sizes);
+    if (typeof colors === "string") colors = JSON.parse(colors);
 
-      // Fallback: If separate translation fields are missing, fall back to name/description.
-      enName = enName || req.body.name;
-      enDescription = enDescription || req.body.description;
-      bgName = bgName || req.body.name;
-      bgDescription = bgDescription || req.body.description;
+    // Fallback: If separate translation fields are missing, fall back to name/description.
+    enName = enName || req.body.name;
+    enDescription = enDescription || req.body.description;
+    bgName = bgName || req.body.name;
+    bgDescription = bgDescription || req.body.description;
 
-      // Use a fallback empty array for req.files.
-      const imagePaths = [];
-      (req.files || []).forEach((file) => {
-        imagePaths.push(file.path);
-      });
+    // Use a fallback empty array for req.files.
+    const imagePaths = [];
+    (req.files || []).forEach((file) => {
+      imagePaths.push(file.path);
+    });
 
-      // Process colors assuming two images per color.
-      const colorData = colors.map((color, index) => ({
-        colorName: color.colorName,
-        imageUrl: imagePaths[index * 2] || "temp-color-image",
-        hoverImage: imagePaths[index * 2 + 1] || "temp-hover-image",
-        position: index,
-      }));
+    // Process colors assuming two images per color.
+    const colorData = colors.map((color, index) => ({
+      colorName: color.colorName,
+      imageUrl: imagePaths[index * 2] || "temp-color-image",
+      hoverImage: imagePaths[index * 2 + 1] || "temp-hover-image",
+      position: index
+    }));
 
-      // Fallback main image for translations.
-      const fallbackMain = imagePaths[0] || "temp-main-image";
+    // Fallback main image for translations.
+    const fallbackMain = imagePaths[0] || "temp-main-image";
 
-      const newProduct = await prisma.product.create({
-        data: {
-          price: parseFloat(price),
-          stock: 100,
-          // Connect category via relation.
-          category: { connect: { id: Number(categoryId) } },
-          colors: { create: colorData },
-          sizes: {
-            create: sizes.map((size) => ({
-              size: { connect: { size } },
-            })),
-          },
-          translations: {
-            create: [
-              {
-                language: "en",
-                name: enName,
-                description: enDescription,
-                imageUrl: fallbackMain,
-              },
-              {
-                language: "bg",
-                name: bgName,
-                description: bgDescription,
-                imageUrl: fallbackMain,
-              },
-            ],
-          },
+    const newProduct = await prisma.product.create({
+      data: {
+        price: parseFloat(price),
+        stock: 100,
+        // Connect category via relation.
+        category: { connect: { id: Number(categoryId) } },
+        colors: { create: colorData },
+        sizes: {
+          create: sizes.map((size) => ({
+            size: { connect: { size } }
+          }))
         },
-        include: {
-          colors: { orderBy: { position: "asc" } },
-          translations: true,
-        },
-      });
+        translations: {
+          create: [
+            {
+              language: "en",
+              name: enName,
+              description: enDescription,
+              imageUrl: fallbackMain
+            },
+            {
+              language: "bg",
+              name: bgName,
+              description: bgDescription,
+              imageUrl: fallbackMain
+            }
+          ]
+        }
+      },
+      include: {
+        colors: { orderBy: { position: "asc" } },
+        translations: true
+      }
+    });
 
-      res.status(201).json({ success: true, product: newProduct });
-    } catch (error) {
-      console.error("Error creating product:", error);
-      res
-        .status(500)
-        .json({ success: false, message: "Product creation failed" });
-    }
+    res.status(201).json({ success: true, product: newProduct });
+  } catch (error) {
+    console.error("Error creating product:", error);
+    res
+      .status(500)
+      .json({ success: false, message: "Product creation failed" });
   }
-);
+});
 
 /**
  * PUT "/:id" – Update Product Details and (optionally) Images (Admin Only)
@@ -215,7 +209,7 @@ router.put(
         bgDescription,
         price,
         categoryId,
-        colors,
+        colors
       } = req.body;
       if (typeof colors === "string") colors = JSON.parse(colors);
 
@@ -225,42 +219,46 @@ router.put(
           where: { id: Number(id) },
           data: {
             price: parseFloat(price),
-            category: { connect: { id: Number(categoryId) } },
-          },
+            category: { connect: { id: Number(categoryId) } }
+          }
         });
 
         const fallbackMain = "temp-main-image";
 
         // Upsert English translation.
         await tx.productTranslation.upsert({
-          where: { productId_language: { productId: Number(id), language: "en" } },
+          where: {
+            productId_language: { productId: Number(id), language: "en" }
+          },
           update: {
             ...(enName ? { name: enName } : {}),
-            ...(enDescription ? { description: enDescription } : {}),
+            ...(enDescription ? { description: enDescription } : {})
           },
           create: {
             productId: Number(id),
             language: "en",
             name: enName,
             description: enDescription,
-            imageUrl: fallbackMain,
-          },
+            imageUrl: fallbackMain
+          }
         });
 
         // Upsert Bulgarian translation.
         await tx.productTranslation.upsert({
-          where: { productId_language: { productId: Number(id), language: "bg" } },
+          where: {
+            productId_language: { productId: Number(id), language: "bg" }
+          },
           update: {
             ...(bgName ? { name: bgName } : {}),
-            ...(bgDescription ? { description: bgDescription } : {}),
+            ...(bgDescription ? { description: bgDescription } : {})
           },
           create: {
             productId: Number(id),
             language: "bg",
             name: bgName,
             description: bgDescription,
-            imageUrl: fallbackMain,
-          },
+            imageUrl: fallbackMain
+          }
         });
 
         // Update colors.
@@ -271,19 +269,21 @@ router.put(
           await tx.color.deleteMany({
             where: {
               productId: Number(id),
-              ...(updatedColorIds.length > 0 ? { id: { notIn: updatedColorIds } } : {}),
-            },
+              ...(updatedColorIds.length > 0
+                ? { id: { notIn: updatedColorIds } }
+                : {})
+            }
           });
           for (const color of colors) {
             if (color.id) {
               const updateData = {
                 colorName: color.colorName,
                 ...(color.imageUrl ? { imageUrl: color.imageUrl } : {}),
-                ...(color.hoverImage ? { hoverImage: color.hoverImage } : {}),
+                ...(color.hoverImage ? { hoverImage: color.hoverImage } : {})
               };
               await tx.color.update({
                 where: { id: Number(color.id) },
-                data: updateData,
+                data: updateData
               });
             } else {
               await tx.color.create({
@@ -291,8 +291,8 @@ router.put(
                   colorName: color.colorName,
                   imageUrl: color.imageUrl || "temp-color-image",
                   hoverImage: color.hoverImage || "temp-hover-image",
-                  productId: Number(id),
-                },
+                  productId: Number(id)
+                }
               });
             }
           }
@@ -312,7 +312,7 @@ router.put(
             uploadFileToS3(file, "colors").then((url) =>
               prisma.color.update({
                 where: { id: colorId },
-                data: { imageUrl: url },
+                data: { imageUrl: url }
               })
             )
           );
@@ -326,7 +326,7 @@ router.put(
             uploadFileToS3(file, "colors").then((url) =>
               prisma.color.update({
                 where: { id: colorId },
-                data: { hoverImage: url },
+                data: { hoverImage: url }
               })
             )
           );
@@ -335,18 +335,18 @@ router.put(
       await Promise.all(updatePromises);
       const finalProduct = await prisma.product.findUnique({
         where: { id: Number(id) },
-        include: { colors: { orderBy: { id: "asc" } }, translations: true },
+        include: { colors: { orderBy: { id: "asc" } }, translations: true }
       });
       return res.status(200).json({
         success: true,
         message: "Product updated successfully",
-        updatedProduct: finalProduct,
+        updatedProduct: finalProduct
       });
     } catch (error) {
       console.error("Error updating product:", error);
       return res.status(500).json({
         success: false,
-        message: "Product update failed: " + error.message,
+        message: "Product update failed: " + error.message
       });
     }
   }
@@ -354,78 +354,74 @@ router.put(
 
 // DELETE Product (Admin Only)
 // DELETE Product (Admin Only)
-router.delete(
-  "/:id",
-  authenticate,
-  requireAdmin,
-  async (req, res) => {
-    const { id } = req.params;
-    try {
-      const productId = parseInt(id, 10);
-      console.log(`Received DELETE request for product with ID: ${productId}`);
+router.delete("/:id", authenticate, requireAdmin, async (req, res) => {
+  const { id } = req.params;
+  try {
+    const productId = parseInt(id, 10);
+    console.log(`Received DELETE request for product with ID: ${productId}`);
 
-      // Check if the product exists.
-      const product = await prisma.product.findUnique({
-        where: { id: productId },
-      });
-      if (!product) {
-        console.log(`Product with ID ${productId} not found.`);
-        return res.status(404).json({ error: "Product not found" });
-      }
-      console.log("Product found for deletion:", product);
+    // Check if the product exists.
+    const product = await prisma.product.findUnique({
+      where: { id: productId }
+    });
+    if (!product) {
+      console.log(`Product with ID ${productId} not found.`);
+      return res.status(404).json({ error: "Product not found" });
+    }
+    console.log("Product found for deletion:", product);
 
-      // If you previously stored any images on S3 (via colors or translations),
-      // you might want to delete them here.
-      // (This example assumes you may have stored a top-level imageUrl,
-      //  but if not, you can remove the following block.)
-      const imagesToDelete =
-        product.images && Array.isArray(product.images)
-          ? product.images
-          : product.imageUrl
+    // If you previously stored any images on S3 (via colors or translations),
+    // you might want to delete them here.
+    // (This example assumes you may have stored a top-level imageUrl,
+    //  but if not, you can remove the following block.)
+    const imagesToDelete =
+      product.images && Array.isArray(product.images)
+        ? product.images
+        : product.imageUrl
           ? [product.imageUrl]
           : [];
-      console.log("Images to delete:", imagesToDelete);
-      for (const imageUrl of imagesToDelete) {
-        try {
-          console.log(`Attempting to delete image: ${imageUrl}`);
-          const url = new URL(imageUrl);
-          const key = url.pathname.substring(1);
-          await s3.send(
-            new DeleteObjectCommand({
-              Bucket: process.env.AWS_S3_BUCKET_NAME,
-              Key: key,
-            })
-          );
-          console.log(`Successfully deleted image: ${imageUrl}`);
-        } catch (deleteError) {
-          console.error(`Error deleting image ${imageUrl}:`, deleteError.message);
-        }
+    console.log("Images to delete:", imagesToDelete);
+    for (const imageUrl of imagesToDelete) {
+      try {
+        console.log(`Attempting to delete image: ${imageUrl}`);
+        const url = new URL(imageUrl);
+        const key = url.pathname.substring(1);
+        await s3.send(
+          new DeleteObjectCommand({
+            Bucket: process.env.AWS_S3_BUCKET_NAME,
+            Key: key
+          })
+        );
+        console.log(`Successfully deleted image: ${imageUrl}`);
+      } catch (deleteError) {
+        console.error(`Error deleting image ${imageUrl}:`, deleteError.message);
       }
-
-      // Delete dependent records first to satisfy foreign key constraints.
-      // Delete associated colors.
-      await prisma.color.deleteMany({ where: { productId: productId } });
-      // Delete associated translations.
-      await prisma.productTranslation.deleteMany({ where: { productId: productId } });
-      // Delete associated sizes (if applicable—adjust the model name as needed).
-      await prisma.productSize.deleteMany({ where: { productId: productId } });
-
-      // Now delete the product.
-      const deletedProduct = await prisma.product.delete({
-        where: { id: productId },
-      });
-      console.log("Product deleted successfully:", deletedProduct);
-      res.status(200).json({
-        success: true,
-        message: "Product deleted successfully",
-      });
-    } catch (error) {
-      console.error("Error deleting product:", error.message);
-      res.status(500).json({ error: "Failed to delete product" });
     }
-  }
-);
 
+    // Delete dependent records first to satisfy foreign key constraints.
+    // Delete associated colors.
+    await prisma.color.deleteMany({ where: { productId: productId } });
+    // Delete associated translations.
+    await prisma.productTranslation.deleteMany({
+      where: { productId: productId }
+    });
+    // Delete associated sizes (if applicable—adjust the model name as needed).
+    await prisma.productSize.deleteMany({ where: { productId: productId } });
+
+    // Now delete the product.
+    const deletedProduct = await prisma.product.delete({
+      where: { id: productId }
+    });
+    console.log("Product deleted successfully:", deletedProduct);
+    res.status(200).json({
+      success: true,
+      message: "Product deleted successfully"
+    });
+  } catch (error) {
+    console.error("Error deleting product:", error.message);
+    res.status(500).json({ error: "Failed to delete product" });
+  }
+});
 
 /**
  * POST "/upload-images" – Upload Product Images (Admin Only)
@@ -445,28 +441,37 @@ router.post(
     try {
       const { productId } = req.body;
       if (!productId) {
-        return res.status(400).json({ success: false, message: "Product ID is required" });
+        return res
+          .status(400)
+          .json({ success: false, message: "Product ID is required" });
       }
 
       // Verify product exists.
       const product = await prisma.product.findUnique({
-        where: { id: Number(productId) },
+        where: { id: Number(productId) }
       });
       if (!product) {
-        return res.status(404).json({ success: false, message: "Product not found" });
+        return res
+          .status(404)
+          .json({ success: false, message: "Product not found" });
       }
 
       const files = req.files || [];
       const updatePromises = [];
 
       // Process mainImage (if provided) and update all translations with the main image URL.
-      const mainImageFile = files.find((file) => file.fieldname === "mainImage");
+      const mainImageFile = files.find(
+        (file) => file.fieldname === "mainImage"
+      );
       if (mainImageFile) {
-        const mainImageUrl = await uploadFileToS3(mainImageFile, "products/main");
+        const mainImageUrl = await uploadFileToS3(
+          mainImageFile,
+          "products/main"
+        );
         updatePromises.push(
           prisma.productTranslation.updateMany({
             where: { productId: Number(productId) },
-            data: { imageUrl: mainImageUrl },
+            data: { imageUrl: mainImageUrl }
           })
         );
       }
@@ -482,9 +487,9 @@ router.post(
               await prisma.color.updateMany({
                 where: {
                   productId: Number(productId),
-                  position: index,
+                  position: index
                 },
-                data: { imageUrl: url },
+                data: { imageUrl: url }
               });
             })
           );
@@ -497,9 +502,9 @@ router.post(
               await prisma.color.updateMany({
                 where: {
                   productId: Number(productId),
-                  position: index,
+                  position: index
                 },
-                data: { hoverImage: url },
+                data: { hoverImage: url }
               });
             })
           );
@@ -507,7 +512,9 @@ router.post(
       });
 
       await Promise.all(updatePromises);
-      res.status(200).json({ success: true, message: "Images uploaded successfully" });
+      res
+        .status(200)
+        .json({ success: true, message: "Images uploaded successfully" });
     } catch (error) {
       console.error("Error uploading images:", error);
       res.status(500).json({ success: false, message: "Image upload failed" });

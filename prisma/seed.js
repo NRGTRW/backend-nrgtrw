@@ -1,11 +1,15 @@
 // Import required modules and set up Prisma, S3, etc.
-import pkg from '@prisma/client';
+import pkg from "@prisma/client";
 const { PrismaClient } = pkg;
-import { S3Client, HeadObjectCommand, PutObjectCommand } from "@aws-sdk/client-s3";
+import {
+  S3Client,
+  HeadObjectCommand,
+  PutObjectCommand
+} from "@aws-sdk/client-s3";
 import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
-import bcrypt from 'bcrypt';
+import bcrypt from "bcrypt";
 
 // Set up __dirname for ES modules.
 const __filename = fileURLToPath(import.meta.url);
@@ -22,25 +26,28 @@ const s3Client = new S3Client({
   region: process.env.AWS_REGION,
   credentials: {
     accessKeyId: process.env.AWS_ACCESS_KEY_ID,
-    secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
-  },
+    secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY
+  }
 });
 
 // Helper: extract the S3 key from a full URL.
 function extractS3Key(url) {
-  const baseUrl = process.env.IMAGE_BASE_URL || "https://example.com/default-images";
+  const baseUrl =
+    process.env.IMAGE_BASE_URL || "https://example.com/default-images";
   if (url.startsWith(baseUrl)) {
-    return url.slice(baseUrl.length).replace(/^\/+/, '');
+    return url.slice(baseUrl.length).replace(/^\/+/, "");
   } else {
     const parsedUrl = new URL(url);
-    return parsedUrl.pathname.replace(/^\/+/, '');
+    return parsedUrl.pathname.replace(/^\/+/, "");
   }
 }
 
 // Check if an object exists in S3.
 async function fileExists(key) {
   try {
-    await s3Client.send(new HeadObjectCommand({ Bucket: bucketName, Key: key }));
+    await s3Client.send(
+      new HeadObjectCommand({ Bucket: bucketName, Key: key })
+    );
     return true;
   } catch (error) {
     if (error.$metadata && error.$metadata.httpStatusCode === 404) {
@@ -54,11 +61,13 @@ async function fileExists(key) {
 async function uploadFile(key, filePath) {
   try {
     const fileContent = await fs.promises.readFile(filePath);
-    await s3Client.send(new PutObjectCommand({
-      Bucket: bucketName,
-      Key: key,
-      Body: fileContent,
-    }));
+    await s3Client.send(
+      new PutObjectCommand({
+        Bucket: bucketName,
+        Key: key,
+        Body: fileContent
+      })
+    );
     console.log(`Uploaded ${key} to S3.`);
   } catch (error) {
     console.error(`Error uploading ${key}:`, error.message);
@@ -67,7 +76,12 @@ async function uploadFile(key, filePath) {
 
 // Before seeding, ensure that all image files (from products and their colors) exist in S3.
 async function seedS3Files() {
-  const products = [...eleganceProducts, ...pumpCoverProducts, ...confidenceProducts, ...availableProducts];
+  const products = [
+    ...eleganceProducts,
+    ...pumpCoverProducts,
+    ...confidenceProducts,
+    ...availableProducts
+  ];
   const fileUrls = new Set();
 
   for (const product of products) {
@@ -93,7 +107,9 @@ async function seedS3Files() {
     try {
       const exists = await fileExists(key);
       if (!exists) {
-        console.log(`File ${key} not found in S3. Uploading from ${localFilePath}...`);
+        console.log(
+          `File ${key} not found in S3. Uploading from ${localFilePath}...`
+        );
         await uploadFile(key, localFilePath);
       } else {
         console.log(`File ${key} already exists in S3.`);
@@ -140,7 +156,13 @@ const seedSizes = async () => {
 // Seed product categories.
 const seedCategories = async () => {
   try {
-    const categories = ["Elegance", "Pump Covers", "Confidence", "Available", "Accessories"];
+    const categories = [
+      "Elegance",
+      "Pump Covers",
+      "Confidence",
+      "Available",
+      "Accessories"
+    ];
     for (const category of categories) {
       await prisma.category.upsert({
         where: { name: category },
@@ -159,7 +181,9 @@ const seedProducts = async (products) => {
   try {
     for (const product of products) {
       // Use the English translation name for logging if available.
-      const productName = product.translations?.find(t => t.language === "en")?.name || product.name;
+      const productName =
+        product.translations?.find((t) => t.language === "en")?.name ||
+        product.name;
       console.log(`Processing product: ${productName}`);
 
       // Upsert the product's category.
@@ -172,7 +196,7 @@ const seedProducts = async (products) => {
       // Use provided sizes or default to globalSizes.
       const productSizes = product.sizes?.length ? product.sizes : globalSizes;
       const availableSizes = await prisma.size.findMany({
-        where: { size: { in: productSizes.map(s => s.toString()) } }
+        where: { size: { in: productSizes.map((s) => s.toString()) } }
       });
 
       await prisma.product.create({
@@ -181,38 +205,46 @@ const seedProducts = async (products) => {
           stock: product.stock,
           category: { connect: { id: category.id } },
           colors: {
-            create: product.colors?.map((color, index) => ({
-              colorName: color.colorName || "Default Color",
-              imageUrl: isValidUrl(color.image) ? color.image : fallbackImage,
-              hoverImage: (color.hoverImage && isValidUrl(color.hoverImage))
-                         ? color.hoverImage
-                         : fallbackImage,
-              position: index
-            })) || []
+            create:
+              product.colors?.map((color, index) => ({
+                colorName: color.colorName || "Default Color",
+                imageUrl: isValidUrl(color.image) ? color.image : fallbackImage,
+                hoverImage:
+                  color.hoverImage && isValidUrl(color.hoverImage)
+                    ? color.hoverImage
+                    : fallbackImage,
+                position: index
+              })) || []
           },
           sizes: {
-            create: availableSizes.map(size => ({
+            create: availableSizes.map((size) => ({
               size: { connect: { id: size.id } }
             }))
           },
           translations: {
-            create: product.translations?.map(translation => ({
+            create: product.translations?.map((translation) => ({
               language: translation.language,
               name: translation.name,
               description: translation.description,
-              imageUrl: isValidUrl(translation.imageUrl) ? translation.imageUrl : fallbackImage,
+              imageUrl: isValidUrl(translation.imageUrl)
+                ? translation.imageUrl
+                : fallbackImage
             })) || [
               {
                 language: "en",
                 name: product.name,
                 description: product.description,
-                imageUrl: isValidUrl(product.imageUrl) ? product.imageUrl : fallbackImage,
+                imageUrl: isValidUrl(product.imageUrl)
+                  ? product.imageUrl
+                  : fallbackImage
               },
               {
                 language: "bg",
                 name: product.name,
                 description: product.description,
-                imageUrl: isValidUrl(product.imageUrl) ? product.imageUrl : fallbackImage,
+                imageUrl: isValidUrl(product.imageUrl)
+                  ? product.imageUrl
+                  : fallbackImage
               }
             ]
           }
@@ -227,7 +259,8 @@ const seedProducts = async (products) => {
   }
 };
 
-const BASE_URL = process.env.IMAGE_BASE_URL || "https://example.com/default-images";
+const BASE_URL =
+  process.env.IMAGE_BASE_URL || "https://example.com/default-images";
 
 // Updated product arrays including translations in both English and Bulgarian.
 const eleganceProducts = [
@@ -495,8 +528,7 @@ const pumpCoverProducts = [
       {
         language: "en",
         name: "Hoodie",
-        description:
-          "Warm, oversized hoodie ideal for cozy days or workouts.",
+        description: "Warm, oversized hoodie ideal for cozy days or workouts.",
         imageUrl: `${BASE_URL}/images/BlackHoodie.webp`
       },
       {
@@ -626,7 +658,7 @@ const availableProducts = [
         colorName: "Legit",
         image: `${BASE_URL}/images/gym-mirror-tee-1.jpg`,
         hoverImage: `${BASE_URL}/images/gym-mirror-tee-1.jpg`
-      },
+      }
     ],
     translations: [
       {
@@ -634,24 +666,24 @@ const availableProducts = [
         name: "Reflection Layer",
         description:
           "Make a bold impression with this oversized streetwear tee. Soft cotton blend, fearless graphics – ideal for both grind time and chill time.",
-        imageUrl: `${BASE_URL}/images/Reflection Layer.jpg`,
+        imageUrl: `${BASE_URL}/images/Reflection Layer.jpg`
       },
       {
         language: "bg",
         name: "Reflection Layer",
         description:
           "Направете смело впечатление с тази оувърсайз тениска със смели графики. Мека памучна смес – идеална както за тренировки, така и за почивка.",
-        imageUrl: `${BASE_URL}/images/Reflection Layer.jpg`,
-      },
+        imageUrl: `${BASE_URL}/images/Reflection Layer.jpg`
+      }
     ]
   }
 ];
 
 // Seed a root admin user if not exists
 async function seedRootAdmin() {
-  const email = process.env.EMAIL_USER || 'root@admin.com';
-  const password = process.env.EMAIL_PASSWORD || 'RootAdmin123!'; // Change after first login
-  const name = process.env.ROOT_ADMIN_NAME || 'Root Admin';
+  const email = process.env.EMAIL_USER || "root@admin.com";
+  const password = process.env.EMAIL_PASSWORD || "RootAdmin123!"; // Change after first login
+  const name = process.env.ROOT_ADMIN_NAME || "Root Admin";
   const hashedPassword = await bcrypt.hash(password, 10);
   const existing = await prisma.user.findUnique({ where: { email } });
   if (!existing) {
@@ -660,7 +692,7 @@ async function seedRootAdmin() {
         email,
         password: hashedPassword,
         name,
-        role: 'ROOT_ADMIN',
+        role: "ROOT_ADMIN",
         isVerified: true
       }
     });

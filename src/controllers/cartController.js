@@ -17,7 +17,8 @@ export const getCart = async (req, res) => {
         // Extract translation for the desired language (e.g., "en")
         const translation =
           item.product.translations.find((t) => t.language === "en") ||
-          (item.product.translations.length > 0 && item.product.translations[0]) ||
+          (item.product.translations.length > 0 &&
+            item.product.translations[0]) ||
           {};
 
         return {

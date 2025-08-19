@@ -44,7 +44,7 @@ export const getAnalytics = async (req, res) => {
   try {
     // Get total users
     const totalUsers = await prisma.user.count();
-    
+
     // Get active users (verified)
     const activeUsers = await prisma.user.count({
       where: { isVerified: true }
@@ -75,7 +75,8 @@ export const getAnalytics = async (req, res) => {
     }, 0);
 
     // Calculate conversion rate (orders / users)
-    const conversionRate = totalUsers > 0 ? ((totalOrders / totalUsers) * 100).toFixed(2) : 0;
+    const conversionRate =
+      totalUsers > 0 ? ((totalOrders / totalUsers) * 100).toFixed(2) : 0;
 
     // Get top products (mock data for now)
     const topProducts = [];
@@ -116,7 +117,7 @@ export const getOrders = async (req, res) => {
             product: {
               include: {
                 translations: {
-                  where: { language: 'en' },
+                  where: { language: "en" },
                   take: 1
                 }
               }
@@ -126,20 +127,20 @@ export const getOrders = async (req, res) => {
         payment: true
       },
       orderBy: {
-        createdAt: 'desc'
+        createdAt: "desc"
       }
     });
 
-    const formattedOrders = orders.map(order => ({
+    const formattedOrders = orders.map((order) => ({
       id: order.id,
       user: order.user,
-      products: order.orderItems.map(item => ({
-        name: item.product.translations[0]?.name || 'Unknown Product',
+      products: order.orderItems.map((item) => ({
+        name: item.product.translations[0]?.name || "Unknown Product",
         quantity: item.quantity,
         price: item.price
       })),
       total: order.payment?.amount || 0,
-      status: order.payment?.status || 'pending',
+      status: order.payment?.status || "pending",
       createdAt: order.createdAt
     }));
 
@@ -191,7 +192,7 @@ export const getSystemHealth = async (req, res) => {
   try {
     // Check database connection
     await prisma.$queryRaw`SELECT 1`;
-    const database = 'Connected';
+    const database = "Connected";
 
     // Get system uptime (mock data)
     const uptime = process.uptime();
@@ -202,7 +203,7 @@ export const getSystemHealth = async (req, res) => {
     const memoryFormatted = `${Math.round(memoryUsage.heapUsed / 1024 / 1024)}MB`;
 
     res.json({
-      status: 'ok',
+      status: "ok",
       uptime: uptimeFormatted,
       database,
       memory: memoryFormatted
@@ -210,10 +211,10 @@ export const getSystemHealth = async (req, res) => {
   } catch (error) {
     console.error("Error checking system health:", error);
     res.status(500).json({
-      status: 'error',
-      uptime: 'Unknown',
-      database: 'Disconnected',
-      memory: 'Unknown'
+      status: "error",
+      uptime: "Unknown",
+      database: "Disconnected",
+      memory: "Unknown"
     });
   }
 };

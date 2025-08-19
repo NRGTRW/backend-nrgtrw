@@ -15,52 +15,22 @@ import {
 const router = express.Router();
 
 // PUT /api/admin/users/role – Променя ролята на потребител (само ROOT_ADMIN)
-router.put(
-  "/admin/users/role",
-  authenticate,
-  requireAdmin,
-  updateUserRole
-);
+router.put("/admin/users/role", authenticate, requireAdmin, updateUserRole);
 
 // GET /api/admin/users – Връща списък с всички потребители (само за ROOT_ADMIN и ADMIN)
-router.get(
-  "/admin/users",
-  authenticate,
-  requireAdmin,
-  getUsers
-);
+router.get("/admin/users", authenticate, requireAdmin, getUsers);
 
 // DELETE /api/admin/users/:id – Изтрива потребител (само ROOT_ADMIN)
-router.delete(
-  "/admin/users/:id",
-  authenticate,
-  requireAdmin,
-  deleteUser
-);
+router.delete("/admin/users/:id", authenticate, requireAdmin, deleteUser);
 
 // GET /api/admin/analytics – Връща аналитични данни
-router.get(
-  "/admin/analytics",
-  authenticate,
-  requireAdmin,
-  getAnalytics
-);
+router.get("/admin/analytics", authenticate, requireAdmin, getAnalytics);
 
 // GET /api/admin/orders – Връща списък с поръчки
-router.get(
-  "/admin/orders",
-  authenticate,
-  requireAdmin,
-  getOrders
-);
+router.get("/admin/orders", authenticate, requireAdmin, getOrders);
 
 // GET /api/admin/activity-log – Връща лог с активности
-router.get(
-  "/admin/activity-log",
-  authenticate,
-  requireAdmin,
-  getActivityLog
-);
+router.get("/admin/activity-log", authenticate, requireAdmin, getActivityLog);
 
 // GET /api/health – Връща здравето на системата
 router.get("/health", getSystemHealth);

@@ -1,7 +1,7 @@
 import express from "express";
 import { PrismaClient } from "@prisma/client";
 import { authenticate, requireAdmin } from "../middlewares/authMiddleware.js";
-import transporter from '../utils/smtpConfig.js';
+import transporter from "../utils/smtpConfig.js";
 
 const router = express.Router();
 const prisma = new PrismaClient();
@@ -10,10 +10,12 @@ const prisma = new PrismaClient();
 router.post("/join", async (req, res) => {
   try {
     const { email, name, phone, message, categoryId, priceRange } = req.body;
-    
+
     // Validate required fields
     if (!email || !name || !categoryId) {
-      return res.status(400).json({ error: "Email, name, and category are required" });
+      return res
+        .status(400)
+        .json({ error: "Email, name, and category are required" });
     }
 
     // Validate categoryId (1: Elegance, 2: Pump Covers, 3: Confidence)
@@ -22,12 +24,14 @@ router.post("/join", async (req, res) => {
     }
 
     // Check if email is already voted for this category
-    const existingVote = await prisma.clothingVote.findFirst({ 
-      where: { email, categoryId } 
+    const existingVote = await prisma.clothingVote.findFirst({
+      where: { email, categoryId }
     });
-    
+
     if (existingVote) {
-      return res.status(400).json({ error: "You have already voted for this category" });
+      return res
+        .status(400)
+        .json({ error: "You have already voted for this category" });
     }
 
     // Create clothing vote entry
@@ -48,14 +52,14 @@ router.post("/join", async (req, res) => {
       where: { categoryId },
       orderBy: { createdAt: "asc" }
     });
-    
+
     const totalVotes = allVotes.length;
-    const position = allVotes.findIndex(vote => vote.email === email) + 1;
+    const position = allVotes.findIndex((vote) => vote.email === email) + 1;
 
     // Get category name for email
     const categoryNames = {
       1: "Elegance",
-      2: "Pump Covers", 
+      2: "Pump Covers",
       3: "Confidence"
     };
     const categoryName = categoryNames[categoryId];
@@ -81,9 +85,9 @@ router.post("/join", async (req, res) => {
                         <p style="font-size: 1rem; color: #fff; margin: 0 0 12px 0;">You are vote <strong>#${position}</strong> out of <strong>${totalVotes}</strong> for this collection.</p>
                         <div style="margin: 18px 0;">
                           <div style="background: #333; border-radius: 8px; overflow: hidden; width: 80%; margin: 0 auto;">
-                            <div style="height: 18px; background: linear-gradient(90deg, #ffe067 0%, #bfa14a 100%); width: ${(position && totalVotes) ? Math.round((position/totalVotes)*100) : 0}%; transition: width 0.4s;"></div>
+                            <div style="height: 18px; background: linear-gradient(90deg, #ffe067 0%, #bfa14a 100%); width: ${position && totalVotes ? Math.round((position / totalVotes) * 100) : 0}%; transition: width 0.4s;"></div>
                           </div>
-                          <div style="font-size: 0.95rem; color: #ffe067; margin-top: 6px;">${position === 1 ? 'You were the first to vote!' : `You're in the top ${Math.round((position/totalVotes)*100)}% of voters!`}</div>
+                          <div style="font-size: 0.95rem; color: #ffe067; margin-top: 6px;">${position === 1 ? "You were the first to vote!" : `You're in the top ${Math.round((position / totalVotes) * 100)}% of voters!`}</div>
                         </div>
                         <p style="font-size: 1rem; color: #fff; margin: 0 0 12px 0;">As a voter, you'll receive:</p>
                         <ul style="list-style: none; padding: 0; color: #ffe067; font-size: 1rem;">
@@ -121,13 +125,15 @@ router.post("/join", async (req, res) => {
 router.get("/check", async (req, res) => {
   try {
     const { email, categoryId } = req.query;
-    
+
     if (!email || !categoryId) {
-      return res.status(400).json({ error: "Email and categoryId are required" });
+      return res
+        .status(400)
+        .json({ error: "Email and categoryId are required" });
     }
 
-    const voteEntry = await prisma.clothingVote.findFirst({ 
-      where: { email, categoryId: parseInt(categoryId) } 
+    const voteEntry = await prisma.clothingVote.findFirst({
+      where: { email, categoryId: parseInt(categoryId) }
     });
 
     // Get vote count and position for this category
@@ -135,12 +141,12 @@ router.get("/check", async (req, res) => {
       where: { categoryId: parseInt(categoryId) },
       orderBy: { createdAt: "asc" }
     });
-    
+
     const totalVotes = allVotes.length;
     let position = null;
-    
+
     if (voteEntry) {
-      position = allVotes.findIndex(vote => vote.email === email) + 1;
+      position = allVotes.findIndex((vote) => vote.email === email) + 1;
     }
 
     res.json({
@@ -161,7 +167,7 @@ router.get("/stats", async (req, res) => {
     const stats = await Promise.all([
       prisma.clothingVote.count({ where: { categoryId: 1 } }), // Elegance
       prisma.clothingVote.count({ where: { categoryId: 2 } }), // Pump Covers
-      prisma.clothingVote.count({ where: { categoryId: 3 } })  // Confidence
+      prisma.clothingVote.count({ where: { categoryId: 3 } }) // Confidence
     ]);
 
     res.json({
@@ -182,7 +188,7 @@ router.get("/stats", async (req, res) => {
 router.get("/admin", authenticate, requireAdmin, async (req, res) => {
   try {
     const { categoryId, status, page = 1, limit = 50 } = req.query;
-    
+
     const where = {};
     if (categoryId) where.categoryId = parseInt(categoryId);
     if (status) where.status = status;
@@ -228,7 +234,7 @@ router.patch("/admin/:id", authenticate, requireAdmin, async (req, res) => {
   try {
     const { id } = req.params;
     const { status, message } = req.body;
-    
+
     const voteEntry = await prisma.clothingVote.update({
       where: { id: parseInt(id) },
       data: {
@@ -269,4 +275,4 @@ router.delete("/admin/:id", authenticate, requireAdmin, async (req, res) => {
   }
 });
 
-export default router; 
+export default router;

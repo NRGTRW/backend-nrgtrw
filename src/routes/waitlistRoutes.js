@@ -1,7 +1,7 @@
 import express from "express";
 import { PrismaClient } from "@prisma/client";
 import { authenticate, requireAdmin } from "../middlewares/authMiddleware.js";
-import transporter from '../utils/smtpConfig.js';
+import transporter from "../utils/smtpConfig.js";
 
 const router = express.Router();
 const prisma = new PrismaClient();
@@ -15,9 +15,13 @@ router.post("/join", async (req, res) => {
       return res.status(400).json({ error: "Email and name are required" });
     }
     // Check if email is already on the global waitlist
-    const existingEntry = await prisma.fitnessWaitlist.findFirst({ where: { email } });
+    const existingEntry = await prisma.fitnessWaitlist.findFirst({
+      where: { email }
+    });
     if (existingEntry) {
-      return res.status(400).json({ error: "You are already on the waitlist for all programs" });
+      return res
+        .status(400)
+        .json({ error: "You are already on the waitlist for all programs" });
     }
     // Create global waitlist entry
     const waitlistEntry = await prisma.fitnessWaitlist.create({
@@ -36,7 +40,7 @@ router.post("/join", async (req, res) => {
       orderBy: { createdAt: "asc" }
     });
     const total = allEntries.length;
-    const position = allEntries.findIndex(entry => entry.email === email) + 1;
+    const position = allEntries.findIndex((entry) => entry.email === email) + 1;
     // Send branded email (no program-specific info)
     await transporter.sendMail({
       from: process.env.EMAIL_USER,
@@ -57,9 +61,9 @@ router.post("/join", async (req, res) => {
                         <p style="font-size: 1rem; color: #fff; margin: 0 0 12px 0;">You are now <strong>#${position}</strong> out of <strong>${total}</strong> on the global waitlist!</p>
                         <div style="margin: 18px 0;">
                           <div style="background: #333; border-radius: 8px; overflow: hidden; width: 80%; margin: 0 auto;">
-                            <div style="height: 18px; background: linear-gradient(90deg, #ffe067 0%, #bfa14a 100%); width: ${(position && total) ? Math.round((position/total)*100) : 0}%; transition: width 0.4s;"></div>
+                            <div style="height: 18px; background: linear-gradient(90deg, #ffe067 0%, #bfa14a 100%); width: ${position && total ? Math.round((position / total) * 100) : 0}%; transition: width 0.4s;"></div>
                           </div>
-                          <div style="font-size: 0.95rem; color: #ffe067; margin-top: 6px;">${position === 1 ? 'You are first in line!' : `You are in the top ${Math.round((position/total)*100)}% of the waitlist!`}</div>
+                          <div style="font-size: 0.95rem; color: #ffe067; margin-top: 6px;">${position === 1 ? "You are first in line!" : `You are in the top ${Math.round((position / total) * 100)}% of the waitlist!`}</div>
                         </div>
                         <p style="font-size: 1rem; color: #fff; margin: 0 0 12px 0;">As a waitlist member, you'll receive:</p>
                         <ul style="list-style: none; padding: 0; color: #ffe067; font-size: 1rem;">
@@ -94,7 +98,7 @@ router.post("/join", async (req, res) => {
 router.get("/status", authenticate, async (req, res) => {
   try {
     const userId = req.user.id;
-    
+
     const waitlistEntries = await prisma.fitnessWaitlist.findMany({
       where: { userId },
       include: {
@@ -124,7 +128,9 @@ router.get("/check", async (req, res) => {
     if (!email) {
       return res.status(400).json({ error: "Email is required" });
     }
-    const waitlistEntry = await prisma.fitnessWaitlist.findFirst({ where: { email } });
+    const waitlistEntry = await prisma.fitnessWaitlist.findFirst({
+      where: { email }
+    });
     // Get position and total for the global waitlist
     const allEntries = await prisma.fitnessWaitlist.findMany({
       where: { programId: null },
@@ -133,7 +139,7 @@ router.get("/check", async (req, res) => {
     const total = allEntries.length;
     let position = null;
     if (waitlistEntry) {
-      position = allEntries.findIndex(entry => entry.email === email) + 1;
+      position = allEntries.findIndex((entry) => entry.email === email) + 1;
     }
     res.json({
       isOnWaitlist: !!waitlistEntry,
@@ -153,7 +159,7 @@ router.get("/check", async (req, res) => {
 router.get("/admin", authenticate, requireAdmin, async (req, res) => {
   try {
     const { programId, status, page = 1, limit = 50 } = req.query;
-    
+
     const where = {};
     if (programId) where.programId = parseInt(programId);
     if (status) where.status = status;
@@ -205,7 +211,7 @@ router.patch("/admin/:id", authenticate, requireAdmin, async (req, res) => {
   try {
     const { id } = req.params;
     const { status, message } = req.body;
-    
+
     console.log("Updating waitlist entry:", { id, status, message });
 
     const waitlistEntry = await prisma.fitnessWaitlist.update({
@@ -258,16 +264,17 @@ router.delete("/admin/:id", authenticate, requireAdmin, async (req, res) => {
 // GET /api/waitlist/admin/stats - Get waitlist statistics (admin only)
 router.get("/admin/stats", authenticate, requireAdmin, async (req, res) => {
   try {
-    const [totalWaiting, totalNotified, totalConverted, totalRemoved] = await Promise.all([
-      prisma.fitnessWaitlist.count({ where: { status: "WAITING" } }),
-      prisma.fitnessWaitlist.count({ where: { status: "NOTIFIED" } }),
-      prisma.fitnessWaitlist.count({ where: { status: "CONVERTED" } }),
-      prisma.fitnessWaitlist.count({ where: { status: "REMOVED" } })
-    ]);
+    const [totalWaiting, totalNotified, totalConverted, totalRemoved] =
+      await Promise.all([
+        prisma.fitnessWaitlist.count({ where: { status: "WAITING" } }),
+        prisma.fitnessWaitlist.count({ where: { status: "NOTIFIED" } }),
+        prisma.fitnessWaitlist.count({ where: { status: "CONVERTED" } }),
+        prisma.fitnessWaitlist.count({ where: { status: "REMOVED" } })
+      ]);
 
     // Get program stats by grouping waitlist entries
     const programStatsRaw = await prisma.fitnessWaitlist.groupBy({
-      by: ['programId'],
+      by: ["programId"],
       _count: {
         id: true
       },
@@ -277,7 +284,9 @@ router.get("/admin/stats", authenticate, requireAdmin, async (req, res) => {
     });
 
     // Get program details for the stats
-    const programIds = programStatsRaw.map(stat => stat.programId).filter(id => id !== null);
+    const programIds = programStatsRaw
+      .map((stat) => stat.programId)
+      .filter((id) => id !== null);
     const programs = await prisma.fitnessProgram.findMany({
       where: {
         id: { in: programIds }
@@ -289,12 +298,12 @@ router.get("/admin/stats", authenticate, requireAdmin, async (req, res) => {
     });
 
     // Combine stats with program titles
-    const programStats = programStatsRaw.map(stat => {
-      const program = programs.find(p => p.id === stat.programId);
+    const programStats = programStatsRaw.map((stat) => {
+      const program = programs.find((p) => p.id === stat.programId);
       return {
         programId: stat.programId,
         count: stat._count.id,
-        programTitle: program ? program.title : 'Unknown Program'
+        programTitle: program ? program.title : "Unknown Program"
       };
     });
 
@@ -311,4 +320,4 @@ router.get("/admin/stats", authenticate, requireAdmin, async (req, res) => {
   }
 });
 
-export default router; 
+export default router;

@@ -19,77 +19,81 @@ import fitnessRoutes from "./routes/fitnessRoutes.js";
 import waitlistRoutes from "./routes/waitlistRoutes.js";
 import clothingVoteRoutes from "./routes/clothingVoteRoutes.js";
 import { PrismaClient } from "@prisma/client";
-import requestRoutes from './routes/requestRoutes.js';
-import testimonialRoutes from './routes/testimonialRoutes.js';
-import feedbackRoutes from './routes/feedbackRoutes.js';
-import http from 'http';
-import { Server as SocketIOServer } from 'socket.io';
-import passport from './utils/passport.js';
-import session from 'express-session';
+import requestRoutes from "./routes/requestRoutes.js";
+import testimonialRoutes from "./routes/testimonialRoutes.js";
+import feedbackRoutes from "./routes/feedbackRoutes.js";
+import http from "http";
+import { Server as SocketIOServer } from "socket.io";
+import passport from "./utils/passport.js";
+import session from "express-session";
 
-dotenv.config();
+dotenv.config({ path: ".env.local" });
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const app = express();
-app.set('trust proxy', 1); // Trust first proxy (for DigitalOcean, Heroku, etc.)
+app.set("trust proxy", 1); // Trust first proxy (for DigitalOcean, Heroku, etc.)
 const server = http.createServer(app);
 const io = new SocketIOServer(server, {
   cors: {
-    origin: ['http://localhost:5173', 'http://localhost:5174', 'http://localhost:3000'],
-    methods: ['GET', 'POST', 'PATCH'],
-    credentials: true,
-  },
+    origin: [
+      "http://localhost:5173",
+      "http://localhost:5174",
+      "http://localhost:3000"
+    ],
+    methods: ["GET", "POST", "PATCH"],
+    credentials: true
+  }
 });
-app.set('io', io);
+app.set("io", io);
 
 // Socket.IO event handlers
-io.on('connection', (socket) => {
-  console.log('Socket.IO client connected:', socket.id);
-  
+io.on("connection", (socket) => {
+  console.log("Socket.IO client connected:", socket.id);
+
   // Join user room
-  socket.on('join', ({ room }) => {
+  socket.on("join", ({ room }) => {
     socket.join(room);
     console.log(`User joined room: ${room}`);
   });
-  
+
   // Handle typing indicators
-  socket.on('start_typing', ({ requestId, userId }) => {
+  socket.on("start_typing", ({ requestId, userId }) => {
     // Get user info for typing indicator
     socket.userId = userId;
     socket.requestId = requestId;
-    
+
     // Broadcast to other users in the same request
-    socket.broadcast.emit('user_typing', { 
-      requestId, 
-      userId, 
-      userName: socket.userName || 'Someone' 
+    socket.broadcast.emit("user_typing", {
+      requestId,
+      userId,
+      userName: socket.userName || "Someone"
     });
   });
-  
-  socket.on('stop_typing', ({ requestId, userId }) => {
+
+  socket.on("stop_typing", ({ requestId, userId }) => {
     // Broadcast to other users in the same request
-    socket.broadcast.emit('user_stopped_typing', { 
-      requestId, 
-      userId, 
-      userName: socket.userName || 'Someone' 
+    socket.broadcast.emit("user_stopped_typing", {
+      requestId,
+      userId,
+      userName: socket.userName || "Someone"
     });
   });
-  
+
   // Handle message status updates
-  socket.on('message_delivered', ({ messageId, requestId }) => {
+  socket.on("message_delivered", ({ messageId, requestId }) => {
     // Broadcast delivery confirmation
-    socket.broadcast.emit('message_delivered', { messageId });
+    socket.broadcast.emit("message_delivered", { messageId });
   });
-  
-  socket.on('message_read', ({ messageId, requestId }) => {
+
+  socket.on("message_read", ({ messageId, requestId }) => {
     // Broadcast read receipt
-    socket.broadcast.emit('message_read', { messageId });
+    socket.broadcast.emit("message_read", { messageId });
   });
-  
-  socket.on('disconnect', () => {
-    console.log('Socket.IO client disconnected:', socket.id);
+
+  socket.on("disconnect", () => {
+    console.log("Socket.IO client disconnected:", socket.id);
   });
 });
 
@@ -115,7 +119,12 @@ app.use(
       }
     },
     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"], // Added PATCH
-    allowedHeaders: ["Content-Type", "Authorization", "x-access-token", "Cache-Control"],
+    allowedHeaders: [
+      "Content-Type",
+      "Authorization",
+      "x-access-token",
+      "Cache-Control"
+    ],
     credentials: true
   })
 );
@@ -167,7 +176,9 @@ app.get("/api/db-health", async (req, res) => {
 // Health check for /api/requests
 app.get("/api/requests/health", (req, res) => {
   console.log("Health check: /api/requests/health hit");
-  res.status(200).json({ success: true, message: "/api/requests route is active" });
+  res
+    .status(200)
+    .json({ success: true, message: "/api/requests route is active" });
 });
 
 // API routes
@@ -183,9 +194,9 @@ app.use("/api/checkout", checkoutRoutes);
 app.use("/api/fitness", fitnessRoutes);
 app.use("/api/waitlist", waitlistRoutes);
 app.use("/api/clothing-vote", clothingVoteRoutes);
-app.use('/api', requestRoutes);
-app.use('/api/testimonials', testimonialRoutes);
-app.use('/api/feedback', feedbackRoutes);
+app.use("/api", requestRoutes);
+app.use("/api/testimonials", testimonialRoutes);
+app.use("/api/feedback", feedbackRoutes);
 
 // Test DB route
 app.get("/api/test-db", async (req, res) => {
@@ -242,7 +253,9 @@ app.get("*", (req, res) => {
     res.status(404).end();
     return;
   }
-  res.sendFile(path.join(__dirname, "../../frontend-nrgtrw/dist", "index.html"));
+  res.sendFile(
+    path.join(__dirname, "../../frontend-nrgtrw/dist", "index.html")
+  );
 });
 
 // Global 404 handler (only for APIs)
@@ -268,11 +281,13 @@ server.listen(PORT, () => {
   console.log(`Server running with Socket.IO on port ${PORT}`);
 });
 
-app.use(session({
-  secret: process.env.SESSION_SECRET || 'supersecret',
-  resave: false,
-  saveUninitialized: false,
-  cookie: { secure: false }, // Set to true if using HTTPS
-}));
+app.use(
+  session({
+    secret: process.env.SESSION_SECRET || "supersecret",
+    resave: false,
+    saveUninitialized: false,
+    cookie: { secure: false } // Set to true if using HTTPS
+  })
+);
 app.use(passport.initialize());
 app.use(passport.session());

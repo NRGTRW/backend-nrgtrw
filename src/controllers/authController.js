@@ -34,8 +34,8 @@ const signup = async (req, res) => {
     });
 
     // Debug log for email credentials
-    console.log('EMAIL_USER at signup:', process.env.EMAIL_USER);
-    console.log('EMAIL_PASSWORD at signup:', process.env.EMAIL_PASSWORD);
+    console.log("EMAIL_USER at signup:", process.env.EMAIL_USER);
+    console.log("EMAIL_PASSWORD at signup:", process.env.EMAIL_PASSWORD);
 
     await transporter.sendMail({
       from: process.env.EMAIL_USER,
@@ -113,10 +113,10 @@ const signup = async (req, res) => {
 const login = async (req, res) => {
   try {
     const { email, password } = req.body;
-    console.log('🔍 Login attempt for email:', email);
+    console.log("🔍 Login attempt for email:", email);
 
     if (!email || !password) {
-      console.log('❌ Missing email or password');
+      console.log("❌ Missing email or password");
       return res.status(400).json({ error: "Invalid credentials" });
     }
 
@@ -133,22 +133,27 @@ const login = async (req, res) => {
     });
 
     if (!user) {
-      console.log('❌ User not found for email:', email);
+      console.log("❌ User not found for email:", email);
       return res.status(401).json({ error: "Invalid credentials" });
     }
 
-    console.log('✅ User found:', { id: user.id, email: user.email, role: user.role, isVerified: user.isVerified });
+    console.log("✅ User found:", {
+      id: user.id,
+      email: user.email,
+      role: user.role,
+      isVerified: user.isVerified
+    });
 
     if (!user.isVerified) {
-      console.log('❌ User not verified');
+      console.log("❌ User not verified");
       return res.status(403).json({ error: "Account not verified" });
     }
 
     const validPassword = await bcrypt.compare(password, user.password);
-    console.log('🔐 Password validation result:', validPassword);
-    
+    console.log("🔐 Password validation result:", validPassword);
+
     if (!validPassword) {
-      console.log('❌ Invalid password');
+      console.log("❌ Invalid password");
       return res.status(401).json({ error: "Invalid credentials" });
     }
 

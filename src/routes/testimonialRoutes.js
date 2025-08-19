@@ -25,4 +25,4 @@ router.delete("/:id", authenticate, requireAdmin, deleteTestimonial);
 // PUT /api/testimonials/:id/approve - Approve testimonial (admin only)
 router.put("/:id/approve", authenticate, requireAdmin, approveTestimonial);
 
-export default router; 
+export default router;

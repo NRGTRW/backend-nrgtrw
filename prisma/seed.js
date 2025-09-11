@@ -142,9 +142,9 @@ const seedSizes = async () => {
   try {
     for (const size of globalSizes) {
       await prisma.size.upsert({
-        where: { size },
+        where: { name: size },
         update: {},
-        create: { size }
+        create: { name: size }
       });
     }
     console.log("✅ Seeded global sizes:", globalSizes);
@@ -196,13 +196,17 @@ const seedProducts = async (products) => {
       // Use provided sizes or default to globalSizes.
       const productSizes = product.sizes?.length ? product.sizes : globalSizes;
       const availableSizes = await prisma.size.findMany({
-        where: { size: { in: productSizes.map((s) => s.toString()) } }
+        where: { name: { in: productSizes.map((s) => s.toString()) } }
       });
 
+      // Get English translation for main product fields
+      const enTranslation = product.translations?.find(t => t.language === 'en');
+      
       await prisma.product.create({
         data: {
+          name: enTranslation?.name || product.name || 'Unnamed Product',
+          description: enTranslation?.description || product.description || 'No description',
           price: product.price,
-          stock: product.stock,
           category: { connect: { id: category.id } },
           colors: {
             create:
@@ -692,7 +696,7 @@ async function seedRootAdmin() {
         email,
         password: hashedPassword,
         name,
-        role: "ROOT_ADMIN",
+        role: "ADMIN",
         isVerified: true
       }
     });

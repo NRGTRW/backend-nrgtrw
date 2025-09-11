@@ -3,8 +3,8 @@ generator client {
 }
 
 datasource db {
-  provider = "mysql"
-  url      = env("DATABASE_URL")
+  provider = "sqlite"
+  url      = "file:./dev.db"
 }
 
 model User {
@@ -15,25 +15,24 @@ model User {
   role                 Role                  @default(USER)
   address              String?
   phone                String?
-  profilePicture       String?               @db.VarChar(512)
-  avatar               String?               @db.VarChar(64)
-  theme                String?               @db.VarChar(64)
+  profilePicture       String?
+  avatar               String?
+  theme                String?
   createdAt            DateTime              @default(now())
   updatedAt            DateTime              @updatedAt
   isVerified           Boolean               @default(false)
   otp                  Int?
   otpExpiresAt         DateTime?
-  provider             String?               @db.VarChar(32) // e.g., 'google', 'facebook'
-  providerId           String?               @db.VarChar(128) // e.g., Google/Facebook user ID
+  provider             String?
+  providerId           String?
   cartItems            CartItem[]
   clothingVotes        ClothingVote[]
   fitnessPurchases     FitnessPurchase[]
   fitnessSubscriptions FitnessSubscription[]
   fitnessWaitlist      FitnessWaitlist[]
-  messages             Message[]             @relation("UserMessages")
+  messages             Message[]
   notifications        Notification[]
   orders               Order[]
-  payments             Payment[]
   requests             Request[]
   wishlist             Wishlist[]
   feedbacks            Feedback[]
@@ -41,20 +40,19 @@ model User {
 
 model Product {
   id           Int                  @id @default(autoincrement())
+  name         String
+  description  String
   price        Float
+  categoryId   Int
   createdAt    DateTime             @default(now())
   updatedAt    DateTime             @updatedAt
-  categoryId   Int?
-  stock        Int
-  cartItems    CartItem[]
-  colors       Color[]
-  orderItems   OrderItem[]
-  category     Category?            @relation(fields: [categoryId], references: [id])
+  category     Category             @relation(fields: [categoryId], references: [id])
   sizes        ProductSize[]
+  colors       Color[]
   translations ProductTranslation[]
   wishlist     Wishlist[]
-
-  @@index([categoryId], map: "Product_categoryId_fkey")
+  cartItems    CartItem[]
+  orderItems   OrderItem[]
 }
 
 model ProductTranslation {
@@ -62,37 +60,51 @@ model ProductTranslation {
   productId   Int
   language    String
   name        String
-  description String   @db.Text
-  imageUrl    String   @db.Text
+  description String
+  imageUrl    String
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
   product     Product  @relation(fields: [productId], references: [id])
 
-  @@unique([productId, language], map: "ProductTranslation_unique")
+  @@unique([productId, language])
 }
 
 model Category {
-  id       Int       @id @default(autoincrement())
-  name     String    @unique
-  products Product[]
+  id        Int       @id @default(autoincrement())
+  name      String    @unique
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  products  Product[]
 }
 
 model Size {
-  id       Int           @id @default(autoincrement())
-  size     String        @unique
-  products ProductSize[]
+  id        Int           @id @default(autoincrement())
+  name      String        @unique
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
+  products  ProductSize[]
+}
+
+model ProductSize {
+  id        Int     @id @default(autoincrement())
+  productId Int
+  sizeId    Int
+  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+  size      Size    @relation(fields: [sizeId], references: [id], onDelete: Cascade)
+
+  @@unique([productId, sizeId])
 }
 
 model Color {
   id         Int     @id @default(autoincrement())
   colorName  String
-  imageUrl   String  @db.Text
-  hoverImage String? @db.Text
+  imageUrl   String
+  hoverImage String?
   position   Int     @default(0)
   productId  Int
-  product    Product @relation(fields: [productId], references: [id], onDelete: Cascade, map: "Color_productId_fkey")
+  product    Product @relation(fields: [productId], references: [id], onDelete: Cascade)
 
-  @@index([productId], map: "Color_productId_fkey")
+  @@index([productId])
 }
 
 model Wishlist {
@@ -106,7 +118,7 @@ model Wishlist {
   user          User    @relation(fields: [userId], references: [id])
 
   @@unique([userId, productId, selectedSize, selectedColor])
-  @@index([productId], map: "Wishlist_productId_fkey")
+  @@index([productId])
 }
 
 model CartItem {
@@ -121,7 +133,7 @@ model CartItem {
   user          User    @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([userId, productId, selectedSize, selectedColor])
-  @@index([productId], map: "CartItem_productId_fkey")
+  @@index([productId])
 }
 
 model Order {
@@ -129,11 +141,11 @@ model Order {
   userId     Int
   createdAt  DateTime    @default(now())
   updatedAt  DateTime    @updatedAt
-  user       User        @relation(fields: [userId], references: [id], onDelete: Cascade, map: "Order_userId_fkey")
+  user       User        @relation(fields: [userId], references: [id], onDelete: Cascade)
   orderItems OrderItem[]
-  payment    Payment?    @relation("OrderPayment")
+  payment    Payment?
 
-  @@index([userId], map: "Order_userId_fkey")
+  @@index([userId])
 }
 
 model OrderItem {
@@ -141,205 +153,144 @@ model OrderItem {
   orderId   Int
   productId Int
   quantity  Int
-  order     Order   @relation(fields: [orderId], references: [id], onDelete: Cascade, map: "OrderItem_orderId_fkey")
-  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade, map: "OrderItem_productId_fkey")
+  order     Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
 
-  @@index([orderId], map: "OrderItem_orderId_fkey")
-  @@index([productId], map: "OrderItem_productId_fkey")
-}
-
-model ProductSize {
-  id        Int     @id @default(autoincrement())
-  productId Int
-  sizeId    Int
-  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade, map: "ProductSize_productId_fkey")
-  size      Size    @relation(fields: [sizeId], references: [id], onDelete: Cascade, map: "ProductSize_sizeId_fkey")
-
-  @@unique([productId, sizeId])
-  @@index([productId], map: "ProductSize_productId_fkey")
-  @@index([sizeId], map: "ProductSize_sizeId_fkey")
+  @@index([orderId])
+  @@index([productId])
 }
 
 model Payment {
-  id              Int           @id @default(autoincrement())
-  orderId         Int?          @unique
-  userId          Int
-  stripeSessionId String        @unique
-  amount          Float
-  status          PaymentStatus @default(PENDING)
-  createdAt       DateTime      @default(now())
-  updatedAt       DateTime      @updatedAt
-  order           Order?        @relation("OrderPayment", fields: [orderId], references: [id])
-  user            User          @relation(fields: [userId], references: [id])
+  id        Int      @id @default(autoincrement())
+  orderId   Int      @unique
+  amount    Float
+  status    String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  order     Order    @relation(fields: [orderId], references: [id])
 
-  @@index([userId], map: "Payment_userId_fkey")
-}
-
-model FitnessProgram {
-  id               Int               @id @default(autoincrement())
-  title            String
-  description      String            @db.Text
-  image            String?           @db.Text
-  video            String?           @db.Text
-  pdfUrl           String?           @db.Text
-  price            Float
-  stripePriceId    String?
-  isActive         Boolean           @default(true)
-  createdAt        DateTime          @default(now())
-  updatedAt        DateTime          @updatedAt
-  instructions     String?           @db.Text
-  explanationVideo String?           @db.Text
-  programText      String?           @db.Text
-  duration         String?
-  difficulty       String?
-  equipment        String?           @db.Text
-  goals            String?           @db.Text
-  waitlistMode     Boolean           @default(false)
-  purchases        FitnessPurchase[]
-  waitlist         FitnessWaitlist[]
-}
-
-model FitnessPurchase {
-  id              Int            @id @default(autoincrement())
-  userId          Int
-  programId       Int
-  stripeSessionId String         @unique
-  amount          Float
-  status          PaymentStatus  @default(PENDING)
-  createdAt       DateTime       @default(now())
-  updatedAt       DateTime       @updatedAt
-  program         FitnessProgram @relation(fields: [programId], references: [id], onDelete: Cascade)
-  user            User           @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@index([userId], map: "FitnessPurchase_userId_fkey")
-  @@index([programId], map: "FitnessPurchase_programId_fkey")
-}
-
-model FitnessSubscription {
-  id              Int           @id @default(autoincrement())
-  userId          Int
-  stripeSessionId String        @unique
-  stripePriceId   String
-  status          PaymentStatus @default(PENDING)
-  expiresAt       DateTime?
-  createdAt       DateTime      @default(now())
-  updatedAt       DateTime      @updatedAt
-  user            User          @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@index([userId], map: "FitnessSubscription_userId_fkey")
-}
-
-model FitnessWaitlist {
-  id        Int             @id @default(autoincrement())
-  userId    Int?
-  programId Int?
-  email     String
-  name      String
-  phone     String?
-  message   String?         @db.Text
-  status    WaitlistStatus  @default(WAITING)
-  createdAt DateTime        @default(now())
-  updatedAt DateTime        @updatedAt
-  program   FitnessProgram? @relation(fields: [programId], references: [id])
-  user      User?           @relation(fields: [userId], references: [id])
-
-  @@unique([email, programId], map: "FitnessWaitlist_email_programId_unique")
-  @@index([userId], map: "FitnessWaitlist_userId_fkey")
-  @@index([programId], map: "FitnessWaitlist_programId_fkey")
+  @@index([orderId])
 }
 
 model ClothingVote {
-  id         Int                @id @default(autoincrement())
-  userId     Int?
-  categoryId Int
-  email      String
-  name       String
-  phone      String?
-  message    String?            @db.Text
-  priceRange String?
-  status     ClothingVoteStatus @default(WAITING)
-  createdAt  DateTime           @default(now())
-  updatedAt  DateTime           @updatedAt
-  user       User?              @relation(fields: [userId], references: [id])
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  productId Int
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  @@unique([email, categoryId], map: "ClothingVote_email_categoryId_unique")
-  @@index([userId], map: "ClothingVote_userId_fkey")
-  @@index([categoryId], map: "ClothingVote_categoryId_fkey")
+  @@unique([userId, productId])
+  @@index([userId])
 }
 
-model Request {
-  id          Int       @id @default(autoincrement())
-  userId      Int
-  title       String
-  description String    @db.Text
-  status      String    @default("pending")
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
-  messages    Message[]
-  user        User      @relation(fields: [userId], references: [id])
+model FitnessProgram {
+  id                Int      @id @default(autoincrement())
+  title             String
+  description       String
+  image             String?
+  video             String?
+  pdfUrl            String?
+  price             Float
+  duration          Int
+  difficulty        String?
+  equipment         String?
+  goals             String?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  instructions      String?
+  explanationVideo  String?
+  programText       String?
+  purchases         FitnessPurchase[]
+  subscriptions     FitnessSubscription[]
+  waitlist          FitnessWaitlist[]
+}
 
-  @@index([userId], map: "Request_userId_fkey")
+model FitnessPurchase {
+  id        Int            @id @default(autoincrement())
+  userId    Int
+  programId Int
+  createdAt DateTime       @default(now())
+  user      User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  program   FitnessProgram @relation(fields: [programId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, programId])
+  @@index([userId])
+  @@index([programId])
+}
+
+model FitnessSubscription {
+  id        Int            @id @default(autoincrement())
+  userId    Int
+  programId Int
+  createdAt DateTime       @default(now())
+  user      User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  program   FitnessProgram @relation(fields: [programId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, programId])
+  @@index([userId])
+  @@index([programId])
+}
+
+model FitnessWaitlist {
+  id        Int            @id @default(autoincrement())
+  userId    Int
+  programId Int
+  createdAt DateTime       @default(now())
+  user      User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  program   FitnessProgram @relation(fields: [programId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, programId])
+  @@index([userId])
+  @@index([programId])
 }
 
 model Message {
   id        Int      @id @default(autoincrement())
-  requestId Int
-  senderId  Int
+  userId    Int
   content   String
-  type      String   @default("text")
   createdAt DateTime @default(now())
-  request   Request  @relation(fields: [requestId], references: [id])
-  sender    User     @relation("UserMessages", fields: [senderId], references: [id])
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  @@index([requestId], map: "Message_requestId_fkey")
-  @@index([senderId], map: "Message_senderId_fkey")
+  @@index([userId])
 }
 
 model Notification {
   id        Int      @id @default(autoincrement())
   userId    Int
-  type      String
-  content   String
+  title     String
+  message   String
   read      Boolean  @default(false)
   createdAt DateTime @default(now())
-  user      User     @relation(fields: [userId], references: [id])
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  @@index([userId], map: "Notification_userId_fkey")
+  @@index([userId])
+}
+
+model Request {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  name      String
+  email     String
+  phone     String?
+  message   String?
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
 }
 
 model Feedback {
   id        Int      @id @default(autoincrement())
-  userId    Int?
-  user      User?    @relation(fields: [userId], references: [id])
-  type      String
+  userId    Int
+  title     String
   message   String
-  email     String?
-  status    String?
   createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
 }
 
 enum Role {
   USER
   ADMIN
-  ROOT_ADMIN
-}
-
-enum PaymentStatus {
-  PENDING
-  COMPLETED
-  FAILED
-}
-
-enum WaitlistStatus {
-  WAITING
-  NOTIFIED
-  CONVERTED
-  REMOVED
-}
-
-enum ClothingVoteStatus {
-  WAITING
-  NOTIFIED
-  CONVERTED
-  REMOVED
 }

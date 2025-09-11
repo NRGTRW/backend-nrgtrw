@@ -1,0 +1,345 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db"
+}
+
+model User {
+  id                   Int                   @id @default(autoincrement())
+  email                String                @unique
+  password             String
+  name                 String
+  role                 Role                  @default(USER)
+  address              String?
+  phone                String?
+  profilePicture       String?
+  avatar               String?
+  theme                String?
+  createdAt            DateTime              @default(now())
+  updatedAt            DateTime              @updatedAt
+  isVerified           Boolean               @default(false)
+  otp                  Int?
+  otpExpiresAt         DateTime?
+  provider             String?               // e.g., 'google', 'facebook'
+  providerId           String?               // e.g., Google/Facebook user ID
+  cartItems            CartItem[]
+  clothingVotes        ClothingVote[]
+  fitnessPurchases     FitnessPurchase[]
+  fitnessSubscriptions FitnessSubscription[]
+  fitnessWaitlist      FitnessWaitlist[]
+  messages             Message[]             @relation("UserMessages")
+  notifications        Notification[]
+  orders               Order[]
+  payments             Payment[]
+  requests             Request[]
+  wishlist             Wishlist[]
+  feedbacks            Feedback[]
+}
+
+model Product {
+  id           Int                  @id @default(autoincrement())
+  price        Float
+  createdAt    DateTime             @default(now())
+  updatedAt    DateTime             @updatedAt
+  categoryId   Int?
+  stock        Int
+  cartItems    CartItem[]
+  colors       Color[]
+  orderItems   OrderItem[]
+  category     Category?            @relation(fields: [categoryId], references: [id])
+  sizes        ProductSize[]
+  translations ProductTranslation[]
+  wishlist     Wishlist[]
+
+  @@index([categoryId], map: "Product_categoryId_fkey")
+}
+
+model ProductTranslation {
+  id          Int      @id @default(autoincrement())
+  productId   Int
+  language    String
+  name        String
+  description String
+  imageUrl    String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  product     Product  @relation(fields: [productId], references: [id])
+
+  @@unique([productId, language], map: "ProductTranslation_unique")
+}
+
+model Category {
+  id       Int       @id @default(autoincrement())
+  name     String    @unique
+  products Product[]
+}
+
+model Size {
+  id       Int           @id @default(autoincrement())
+  size     String        @unique
+  products ProductSize[]
+}
+
+model Color {
+  id         Int     @id @default(autoincrement())
+  colorName  String
+  imageUrl   String
+  hoverImage String?
+  position   Int     @default(0)
+  productId  Int
+  product    Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@index([productId], map: "Color_productId_fkey")
+}
+
+model Wishlist {
+  id            Int     @id @default(autoincrement())
+  userId        Int
+  productId     Int
+  selectedSize  String?
+  selectedColor String?
+  quantity      Int     @default(1)
+  product       Product @relation(fields: [productId], references: [id])
+  user          User    @relation(fields: [userId], references: [id])
+
+  @@unique([userId, productId, selectedSize, selectedColor])
+  @@index([productId], map: "Wishlist_productId_fkey")
+}
+
+model CartItem {
+  id            Int     @id @default(autoincrement())
+  userId        Int
+  productId     Int
+  quantity      Int
+  selectedSize  String?
+  selectedColor String?
+  name          String  @default("")
+  product       Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+  user          User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, productId, selectedSize, selectedColor])
+  @@index([productId], map: "CartItem_productId_fkey")
+}
+
+model Order {
+  id         Int         @id @default(autoincrement())
+  userId     Int
+  createdAt  DateTime    @default(now())
+  updatedAt  DateTime    @updatedAt
+  user       User        @relation(fields: [userId], references: [id], onDelete: Cascade, map: "Order_userId_fkey")
+  orderItems OrderItem[]
+  payment    Payment?    @relation("OrderPayment")
+
+  @@index([userId], map: "Order_userId_fkey")
+}
+
+model OrderItem {
+  id        Int     @id @default(autoincrement())
+  orderId   Int
+  productId Int
+  quantity  Int
+  order     Order   @relation(fields: [orderId], references: [id], onDelete: Cascade, map: "OrderItem_orderId_fkey")
+  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade, map: "OrderItem_productId_fkey")
+
+  @@index([orderId], map: "OrderItem_orderId_fkey")
+  @@index([productId], map: "OrderItem_productId_fkey")
+}
+
+model ProductSize {
+  id        Int     @id @default(autoincrement())
+  productId Int
+  sizeId    Int
+  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade, map: "ProductSize_productId_fkey")
+  size      Size    @relation(fields: [sizeId], references: [id], onDelete: Cascade, map: "ProductSize_sizeId_fkey")
+
+  @@unique([productId, sizeId])
+  @@index([productId], map: "ProductSize_productId_fkey")
+  @@index([sizeId], map: "ProductSize_sizeId_fkey")
+}
+
+model Payment {
+  id              Int           @id @default(autoincrement())
+  orderId         Int?          @unique
+  userId          Int
+  stripeSessionId String        @unique
+  amount          Float
+  status          PaymentStatus @default(PENDING)
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+  order           Order?        @relation("OrderPayment", fields: [orderId], references: [id])
+  user            User          @relation(fields: [userId], references: [id])
+
+  @@index([userId], map: "Payment_userId_fkey")
+}
+
+model FitnessProgram {
+  id               Int               @id @default(autoincrement())
+  title            String
+  description      String            @db.Text
+  image            String?           @db.Text
+  video            String?           @db.Text
+  pdfUrl           String?           @db.Text
+  price            Float
+  stripePriceId    String?
+  isActive         Boolean           @default(true)
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+  instructions     String?           @db.Text
+  explanationVideo String?           @db.Text
+  programText      String?           @db.Text
+  duration         String?
+  difficulty       String?
+  equipment        String?           @db.Text
+  goals            String?           @db.Text
+  waitlistMode     Boolean           @default(false)
+  purchases        FitnessPurchase[]
+  waitlist         FitnessWaitlist[]
+}
+
+model FitnessPurchase {
+  id              Int            @id @default(autoincrement())
+  userId          Int
+  programId       Int
+  stripeSessionId String         @unique
+  amount          Float
+  status          PaymentStatus  @default(PENDING)
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+  program         FitnessProgram @relation(fields: [programId], references: [id], onDelete: Cascade)
+  user            User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId], map: "FitnessPurchase_userId_fkey")
+  @@index([programId], map: "FitnessPurchase_programId_fkey")
+}
+
+model FitnessSubscription {
+  id              Int           @id @default(autoincrement())
+  userId          Int
+  stripeSessionId String        @unique
+  stripePriceId   String
+  status          PaymentStatus @default(PENDING)
+  expiresAt       DateTime?
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+  user            User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId], map: "FitnessSubscription_userId_fkey")
+}
+
+model FitnessWaitlist {
+  id        Int             @id @default(autoincrement())
+  userId    Int?
+  programId Int?
+  email     String
+  name      String
+  phone     String?
+  message   String?         @db.Text
+  status    WaitlistStatus  @default(WAITING)
+  createdAt DateTime        @default(now())
+  updatedAt DateTime        @updatedAt
+  program   FitnessProgram? @relation(fields: [programId], references: [id])
+  user      User?           @relation(fields: [userId], references: [id])
+
+  @@unique([email, programId], map: "FitnessWaitlist_email_programId_unique")
+  @@index([userId], map: "FitnessWaitlist_userId_fkey")
+  @@index([programId], map: "FitnessWaitlist_programId_fkey")
+}
+
+model ClothingVote {
+  id         Int                @id @default(autoincrement())
+  userId     Int?
+  categoryId Int
+  email      String
+  name       String
+  phone      String?
+  message    String?            @db.Text
+  priceRange String?
+  status     ClothingVoteStatus @default(WAITING)
+  createdAt  DateTime           @default(now())
+  updatedAt  DateTime           @updatedAt
+  user       User?              @relation(fields: [userId], references: [id])
+
+  @@unique([email, categoryId], map: "ClothingVote_email_categoryId_unique")
+  @@index([userId], map: "ClothingVote_userId_fkey")
+  @@index([categoryId], map: "ClothingVote_categoryId_fkey")
+}
+
+model Request {
+  id          Int       @id @default(autoincrement())
+  userId      Int
+  title       String
+  description String    @db.Text
+  status      String    @default("pending")
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  messages    Message[]
+  user        User      @relation(fields: [userId], references: [id])
+
+  @@index([userId], map: "Request_userId_fkey")
+}
+
+model Message {
+  id        Int      @id @default(autoincrement())
+  requestId Int
+  senderId  Int
+  content   String
+  type      String   @default("text")
+  createdAt DateTime @default(now())
+  request   Request  @relation(fields: [requestId], references: [id])
+  sender    User     @relation("UserMessages", fields: [senderId], references: [id])
+
+  @@index([requestId], map: "Message_requestId_fkey")
+  @@index([senderId], map: "Message_senderId_fkey")
+}
+
+model Notification {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  type      String
+  content   String
+  read      Boolean  @default(false)
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id])
+
+  @@index([userId], map: "Notification_userId_fkey")
+}
+
+model Feedback {
+  id        Int      @id @default(autoincrement())
+  userId    Int?
+  user      User?    @relation(fields: [userId], references: [id])
+  type      String
+  message   String
+  email     String?
+  status    String?
+  createdAt DateTime @default(now())
+}
+
+enum Role {
+  USER
+  ADMIN
+  ROOT_ADMIN
+}
+
+enum PaymentStatus {
+  PENDING
+  COMPLETED
+  FAILED
+}
+
+enum WaitlistStatus {
+  WAITING
+  NOTIFIED
+  CONVERTED
+  REMOVED
+}
+
+enum ClothingVoteStatus {
+  WAITING
+  NOTIFIED
+  CONVERTED
+  REMOVED
+}

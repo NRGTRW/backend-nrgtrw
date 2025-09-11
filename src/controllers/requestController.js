@@ -370,11 +370,9 @@ export const markMessagesAsRead = async (req, res) => {
       role !== "ROOT_ADMIN" &&
       request.userId !== userId
     ) {
-      return res
-        .status(403)
-        .json({
-          error: "Not authorized to mark messages as read for this request."
-        });
+      return res.status(403).json({
+        error: "Not authorized to mark messages as read for this request."
+      });
     }
 
     // Mark messages as read

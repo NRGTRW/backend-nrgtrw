@@ -13,9 +13,7 @@ const fitnessPrograms = [
     video: S3_BASE + "foundation.mp4", // Placeholder, update if needed
     pdfUrl: S3_BASE + "pdfs/foundation.pdf", // Placeholder, update if needed
     price: 50.0,
-    stripePriceId: "price_xxx_foundation", // TODO: Replace with real Stripe price ID
-    isActive: true,
-    duration: "3–6+ months (until solid muscle base)",
+    duration: 180,
     difficulty: "Beginner",
     equipment: JSON.stringify([
       "Dumbbells (optional)",
@@ -34,7 +32,6 @@ const fitnessPrograms = [
     instructions: `Foundation Phase: Build & Burn – Key Principles\n\n- Beginner-friendly, habit-driven approach\n- Focus on form, confidence, and gradual strength gains\n- Whole-food, high-protein, balanced diet\n- Moderate cardio for conditioning and fat loss\n- Consistency and identity shift through daily actions\n- No calorie counting initially\n- Weekly check-ins and habit tracking\n- Mindset: "Every action shapes the new me."\n- Deload every 6–8 weeks if needed`,
     programText: `🌱 Foundation Phase: Build & Burn – Quick Guide\n\nGoal: Fat loss + beginner muscle development through habit-driven training\nDuration: Ongoing until solid muscle base (~3–6+ months)\nTraining Split: Full-body workouts 3x/week (Mon/Wed/Fri)\nDiet: Whole-food quality first; high protein, balanced fats/carbs\nCardio: 2–4x/week Low-to-moderate intensity\nSupplements (Optional): Omega-3, Creatine, Electrolytes, Whey, Caffeine\n\n📌 Program Philosophy Overview:\n- Beginner-Friendly: Build movement confidence, prioritize form & gradual strength gains\n- Fat Loss Focused: Whole foods, clean eating, no calorie counting initially\n- Consistency: Habit-forming structure (simple, sustainable)\n- Cardio Integration: Moderate cardio for conditioning & extra fat burn\n- Identity Shift: Reinforce new fit identity through daily actions\n\n🗓️ Weekly Training Split: (Full Body x3)\nDay 1: Full Body (A) – Squat, Bench Press, Row, Plank\nDay 2: Rest or Cardio – Walking, cycling, incline treadmill\nDay 3: Full Body (B) – Deadlift, Overhead Press, Pulldowns, Lunges\nDay 4: Rest or Cardio – Walking, cycling, incline treadmill\nDay 5: Full Body (C) – Leg Press, Incline Bench, DB Row, Core\nDay 6: Rest or Cardio – Active recovery, mobility, stretching\nDay 7: Rest & Recovery – Full rest, meal prep, reflection\n\n🏋️ Daily Workout Structure:\n- Sets: 3 sets per exercise\n- Reps: Mostly 8–12 reps (moderate range)\n- Intensity: ~1–2 RIR (stop ~2 reps before failure)\n- Tempo: Controlled eccentric (2–3 sec down), explosive concentric\n- Progression: Gradually increase weights/reps weekly\n\n🥗 Nutrition Simplified:\n- Protein: 1.6–2.0g/kg bodyweight (lean meats, fish, dairy, eggs)\n- Fat: ~25–30% total calories (olive oil, nuts, avocado, animal fats)\n- Carbs: Fibrous veggies, fruits, tubers; emphasize around workouts\n- Hydration: Water + electrolytes (salt, potassium, magnesium)\n\n🚴 Cardio Guidelines:\n- Frequency: 2–4x/week (~20–40 min each, gradually increasing)\n- Intensity: Low-to-moderate (brisk walk, incline treadmill, cycling)\n- Purpose: Conditioning, calorie burn, recovery support\n\n💊 Supplement Quick List (Optional):\n- Omega-3 Fish Oil (if low fish intake)\n- Creatine (5g daily)\n- Electrolytes (hydration)\n- Whey Protein (to reach protein target)\n- Caffeine (pre-workout energy)\n\n📈 Tracking Your Progress:\n- Weekly: Weight check (consistent conditions)\n- Monthly: Tape measurements (waist, chest, hips, thighs, arms), photos\n- Daily: Training log (exercises, weights, reps)\n\n🔄 Adjustments Based on Feedback:\n- Slow fat loss: Slightly increase cardio or tighten diet portions\n- Hunger/low energy: Slightly increase quality carbs/protein portions\n- Strength Plateau: Check form, recovery, nutrition; deload if needed\n- Fatigue/Burnout: Prioritize sleep, recovery days, adjust training volume temporarily\n\n🧠 Mindset & Motivation Prompts (Examples):\n- Identity Focus: "Every action shapes the new me."\n- Small Wins: "Today’s discipline is tomorrow’s confidence."\n- Consistency: "Win today—tomorrow takes care of itself."\n- Recovery: "Growth happens during rest—honor your recovery days."\n\n📅 Deload Protocol (Every ~6–8 Weeks if needed):\n- Duration: 1 Week\n- Reduce: Training volume by ~50% or intensity (weight) by ~60%\n- Purpose: Allow full recovery, prevent plateaus, maintain progress`,
     explanationVideo: S3_BASE + "foundation_explanation.mp4", // Placeholder, update if needed
-    waitlistMode: false
   },
   {
     title: "Shredded in 6 Weeks",
@@ -44,9 +41,7 @@ const fitnessPrograms = [
     video: S3_BASE + "shred6.mp4", // Temporary video URL (same as Fitness.jsx)
     pdfUrl: S3_BASE + "pdfs/shred6.pdf", // Placeholder, update if needed
     price: 500.0,
-    stripePriceId: "price_xxx_shred6", // TODO: Replace with real Stripe price ID
-    isActive: true, // Locked for now
-    duration: "6 weeks (+2 week adaptation)",
+    duration: 42,
     equipment: JSON.stringify([
       "Dumbbells",
       "Barbell",
@@ -138,7 +133,6 @@ Set new goal: Performance, muscle gain, or maintain physique
 
 Full PDF: Download the complete guide`,
     explanationVideo: S3_BASE + "shred6.mp4",
-    waitlistMode: false
   },
   {
     title: "Precision Growth",
@@ -148,9 +142,7 @@ Full PDF: Download the complete guide`,
     video: S3_BASE + "precisiongrowth.mp4",
     pdfUrl: S3_BASE + "pdfs/precisiongrowth.pdf",
     price: 500.0,
-    stripePriceId: "price_xxx_precision", // TODO: Replace with real Stripe price ID
-    isActive: true,
-    duration: "12 weeks",
+    duration: 84,
     difficulty: "Advanced",
     equipment: JSON.stringify([
       "Full gym access",
@@ -251,7 +243,6 @@ Reduce: Volume (by ~50%) or Intensity (~60% weight)
 Purpose: Recover, avoid plateaus, return stronger
 `,
     explanationVideo: S3_BASE + "videos/precision_explanation.mp4",
-    waitlistMode: false
   },
   {
     title: "Aesthetic Push/Pull/Legs",
@@ -260,9 +251,7 @@ Purpose: Recover, avoid plateaus, return stronger
     video: S3_BASE + "ppl.mp4",
     pdfUrl: S3_BASE + "pdfs/ppl.pdf",
     price: 500.0,
-    stripePriceId: "price_xxx_ppl", // TODO: Replace with real Stripe price ID
-    isActive: false,
-    duration: "8 weeks",
+    duration: 56,
     difficulty: "Advanced",
     equipment: JSON.stringify([
       "Full gym access",
@@ -316,7 +305,6 @@ LEG DAYS:
 
 [Detailed progression and variation schemes would be included]`,
     explanationVideo: S3_BASE + "videos/ppl_explanation.mp4",
-    waitlistMode: false
   }
 ];
 

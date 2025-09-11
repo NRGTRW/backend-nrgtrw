@@ -135,11 +135,9 @@ router.post("/create-checkout-session", async (req, res) => {
           console.error(
             `No translations found for product id: ${item.productId}`
           );
-          return res
-            .status(404)
-            .json({
-              error: `Product translation not found: ${item.productId}`
-            });
+          return res.status(404).json({
+            error: `Product translation not found: ${item.productId}`
+          });
         }
         // Look for an English translation.
         let translation = product.translations.find((t) => t.language === "en");

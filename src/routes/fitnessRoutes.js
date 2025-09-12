@@ -9,6 +9,7 @@ const prisma = new PrismaClient();
 router.get("/programs", async (req, res) => {
   try {
     const programs = await prisma.fitnessProgram.findMany({
+      where: { isActive: true },
       orderBy: { createdAt: "asc" }
     });
     res.json(programs);
@@ -253,35 +254,34 @@ router.put(
 );
 
 // PATCH /api/fitness/admin/programs/:id/toggle - Toggle program active status (admin only)
-// Note: This route is disabled as isActive field doesn't exist in the schema
-// router.patch(
-//   "/admin/programs/:id/toggle",
-//   authenticate,
-//   requireAdmin,
-//   async (req, res) => {
-//     try {
-//       const { id } = req.params;
+router.patch(
+  "/admin/programs/:id/toggle",
+  authenticate,
+  requireAdmin,
+  async (req, res) => {
+    try {
+      const { id } = req.params;
 
-//       const currentProgram = await prisma.fitnessProgram.findUnique({
-//         where: { id: parseInt(id) }
-//       });
+      const currentProgram = await prisma.fitnessProgram.findUnique({
+        where: { id: parseInt(id) }
+      });
 
-//       if (!currentProgram) {
-//         return res.status(404).json({ error: "Program not found" });
-//       }
+      if (!currentProgram) {
+        return res.status(404).json({ error: "Program not found" });
+      }
 
-//       const program = await prisma.fitnessProgram.update({
-//         where: { id: parseInt(id) },
-//         data: { isActive: !currentProgram.isActive }
-//       });
+      const program = await prisma.fitnessProgram.update({
+        where: { id: parseInt(id) },
+        data: { isActive: !currentProgram.isActive }
+      });
 
-//       res.json(program);
-//     } catch (error) {
-//       console.error("Error toggling fitness program:", error);
-//       res.status(500).json({ error: "Failed to toggle program" });
-//     }
-//   }
-// );
+      res.json(program);
+    } catch (error) {
+      console.error("Error toggling fitness program:", error);
+      res.status(500).json({ error: "Failed to toggle program" });
+    }
+  }
+);
 
 // DELETE /api/fitness/admin/programs/:id - Delete program (admin only)
 router.delete(

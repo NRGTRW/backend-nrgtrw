@@ -195,6 +195,7 @@ model FitnessProgram {
   difficulty        String?
   equipment         String?
   goals             String?
+  isActive          Boolean  @default(true)
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
   instructions      String?

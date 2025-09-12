@@ -709,6 +709,12 @@ async function seedRootAdmin() {
 // Main seeding function.
 const main = async () => {
   console.log("🌱 Seeding products only...");
+  
+  // Clear existing products to prevent duplicates
+  console.log("🧹 Clearing existing products...");
+  await prisma.product.deleteMany({});
+  console.log("✅ Existing products cleared");
+  
   await seedRootAdmin();
   // Ensure all product image files are in S3.
   await seedS3Files();

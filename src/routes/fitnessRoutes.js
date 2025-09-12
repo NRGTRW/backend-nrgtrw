@@ -9,7 +9,6 @@ const prisma = new PrismaClient();
 router.get("/programs", async (req, res) => {
   try {
     const programs = await prisma.fitnessProgram.findMany({
-      where: { isActive: true },
       orderBy: { createdAt: "asc" }
     });
     res.json(programs);
@@ -70,7 +69,6 @@ router.get("/user-access", authenticate, async (req, res) => {
 
     // Get all programs
     const allPrograms = await prisma.fitnessProgram.findMany({
-      where: { isActive: true },
       select: {
         id: true,
         title: true
@@ -166,7 +164,6 @@ router.post("/admin/programs", authenticate, requireAdmin, async (req, res) => {
       pdfUrl,
       price,
       stripePriceId,
-      isActive,
       instructions,
       explanationVideo,
       programText,
@@ -186,7 +183,6 @@ router.post("/admin/programs", authenticate, requireAdmin, async (req, res) => {
         pdfUrl: pdfUrl || null,
         price: parseFloat(price),
         stripePriceId: stripePriceId || null,
-        isActive: isActive !== undefined ? isActive : true,
         instructions: instructions || null,
         explanationVideo: explanationVideo || null,
         programText: programText || null,
@@ -221,7 +217,6 @@ router.put(
         pdfUrl,
         price,
         stripePriceId,
-        isActive,
         instructions,
         explanationVideo,
         programText,
@@ -242,7 +237,6 @@ router.put(
           pdfUrl: pdfUrl || null,
           price: parseFloat(price),
           stripePriceId: stripePriceId || null,
-          isActive: isActive !== undefined ? isActive : true,
           instructions: instructions || null,
           explanationVideo: explanationVideo || null,
           programText: programText || null,
@@ -263,34 +257,35 @@ router.put(
 );
 
 // PATCH /api/fitness/admin/programs/:id/toggle - Toggle program active status (admin only)
-router.patch(
-  "/admin/programs/:id/toggle",
-  authenticate,
-  requireAdmin,
-  async (req, res) => {
-    try {
-      const { id } = req.params;
+// Note: This route is disabled as isActive field doesn't exist in the schema
+// router.patch(
+//   "/admin/programs/:id/toggle",
+//   authenticate,
+//   requireAdmin,
+//   async (req, res) => {
+//     try {
+//       const { id } = req.params;
 
-      const currentProgram = await prisma.fitnessProgram.findUnique({
-        where: { id: parseInt(id) }
-      });
+//       const currentProgram = await prisma.fitnessProgram.findUnique({
+//         where: { id: parseInt(id) }
+//       });
 
-      if (!currentProgram) {
-        return res.status(404).json({ error: "Program not found" });
-      }
+//       if (!currentProgram) {
+//         return res.status(404).json({ error: "Program not found" });
+//       }
 
-      const program = await prisma.fitnessProgram.update({
-        where: { id: parseInt(id) },
-        data: { isActive: !currentProgram.isActive }
-      });
+//       const program = await prisma.fitnessProgram.update({
+//         where: { id: parseInt(id) },
+//         data: { isActive: !currentProgram.isActive }
+//       });
 
-      res.json(program);
-    } catch (error) {
-      console.error("Error toggling fitness program:", error);
-      res.status(500).json({ error: "Failed to toggle program" });
-    }
-  }
-);
+//       res.json(program);
+//     } catch (error) {
+//       console.error("Error toggling fitness program:", error);
+//       res.status(500).json({ error: "Failed to toggle program" });
+//     }
+//   }
+// );
 
 // DELETE /api/fitness/admin/programs/:id - Delete program (admin only)
 router.delete(
@@ -386,9 +381,7 @@ router.get("/admin/analytics", authenticate, requireAdmin, async (req, res) => {
   try {
     // Get total programs
     const totalPrograms = await prisma.fitnessProgram.count();
-    const activePrograms = await prisma.fitnessProgram.count({
-      where: { isActive: true }
-    });
+    const activePrograms = await prisma.fitnessProgram.count();
 
     // Get total purchases
     const totalPurchases = await prisma.fitnessPurchase.count();
@@ -493,33 +486,34 @@ router.get(
 // ========== BULK OPERATIONS ==========
 
 // POST /api/fitness/admin/programs/bulk-toggle - Bulk toggle programs (admin only)
-router.post(
-  "/admin/programs/bulk-toggle",
-  authenticate,
-  requireAdmin,
-  async (req, res) => {
-    try {
-      const { programIds, isActive } = req.body;
+// Note: This route is disabled as isActive field doesn't exist in the schema
+// router.post(
+//   "/admin/programs/bulk-toggle",
+//   authenticate,
+//   requireAdmin,
+//   async (req, res) => {
+//     try {
+//       const { programIds, isActive } = req.body;
 
-      if (!Array.isArray(programIds) || programIds.length === 0) {
-        return res.status(400).json({ error: "Program IDs array is required" });
-      }
+//       if (!Array.isArray(programIds) || programIds.length === 0) {
+//         return res.status(400).json({ error: "Program IDs array is required" });
+//       }
 
-      const result = await prisma.fitnessProgram.updateMany({
-        where: { id: { in: programIds.map((id) => parseInt(id)) } },
-        data: { isActive }
-      });
+//       const result = await prisma.fitnessProgram.updateMany({
+//         where: { id: { in: programIds.map((id) => parseInt(id)) } },
+//         data: { isActive }
+//       });
 
-      res.json({
-        message: `${result.count} programs ${isActive ? "activated" : "deactivated"} successfully`,
-        updatedCount: result.count
-      });
-    } catch (error) {
-      console.error("Error bulk toggling programs:", error);
-      res.status(500).json({ error: "Failed to bulk toggle programs" });
-    }
-  }
-);
+//       res.json({
+//         message: `${result.count} programs ${isActive ? "activated" : "deactivated"} successfully`,
+//         updatedCount: result.count
+//       });
+//     } catch (error) {
+//       console.error("Error bulk toggling programs:", error);
+//       res.status(500).json({ error: "Failed to bulk toggle programs" });
+//     }
+//   }
+// );
 
 // ========== EXPORT ROUTES ==========
 

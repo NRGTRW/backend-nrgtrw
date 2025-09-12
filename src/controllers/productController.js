@@ -94,21 +94,25 @@ export const getAllProducts = async (req, res) => {
 export const getProductById = async (req, res) => {
   const { id } = req.params;
   try {
+    console.log(`Fetching product with ID: ${id}`);
     const product = await prisma.product.findUnique({
       where: { id: parseInt(id, 10) },
       include: {
         sizes: { include: { size: true } },
         colors: true,
-        category: true
+        category: true,
+        translations: true // Include translations
       }
     });
     if (!product) {
+      console.log(`Product with ID ${id} not found`);
       return res.status(404).json({ error: "Product not found" });
     }
     const formattedProduct = {
       ...product,
       sizes: product.sizes.map((ps) => ps.size)
     };
+    console.log(`✅ Product fetched:`, formattedProduct);
 
     return res.status(200).json(formattedProduct);
   } catch (error) {

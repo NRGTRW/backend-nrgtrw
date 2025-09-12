@@ -71,6 +71,7 @@ router.get("/", async (req, res) => {
 router.get("/:id", async (req, res) => {
   const { id } = req.params;
   try {
+    console.log(`[ROUTE] Fetching product with ID: ${id}`);
     const product = await prisma.product.findUnique({
       where: { id: parseInt(id, 10) },
       include: {
@@ -81,16 +82,18 @@ router.get("/:id", async (req, res) => {
       }
     });
     if (!product) {
+      console.log(`[ROUTE] Product with ID ${id} not found`);
       return res.status(404).json({ error: "Product not found" });
     }
     const formattedProduct = {
       ...product,
       sizes: product.sizes.map((ps) => ps.size)
     };
+    console.log(`[ROUTE] ✅ Product fetched:`, formattedProduct);
 
     return res.status(200).json(formattedProduct);
   } catch (error) {
-    console.error(`Error fetching product with ID ${id}:`, error.message);
+    console.error(`[ROUTE] Error fetching product with ID ${id}:`, error.message);
     if (!res.headersSent) {
       return res.status(500).json({ error: "Failed to fetch product." });
     }

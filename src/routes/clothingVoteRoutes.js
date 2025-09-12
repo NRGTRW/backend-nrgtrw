@@ -164,17 +164,54 @@ router.get("/check", async (req, res) => {
 // GET /api/clothing-vote/stats - Get voting statistics for all categories
 router.get("/stats", async (req, res) => {
   try {
-    const stats = await Promise.all([
-      prisma.clothingVote.count({ where: { categoryId: 1 } }), // Elegance
-      prisma.clothingVote.count({ where: { categoryId: 2 } }), // Pump Covers
-      prisma.clothingVote.count({ where: { categoryId: 3 } }) // Confidence
-    ]);
+    // Get votes with product information to access categoryId
+    const votes = await prisma.clothingVote.findMany({
+      include: {
+        user: {
+          select: {
+            id: true
+          }
+        }
+      }
+    });
+
+    // Get all products to map productId to categoryId
+    const products = await prisma.product.findMany({
+      select: {
+        id: true,
+        categoryId: true
+      }
+    });
+
+    // Create a map of productId to categoryId
+    const productCategoryMap = {};
+    products.forEach(product => {
+      productCategoryMap[product.id] = product.categoryId;
+    });
+
+    // Count votes by category
+    const categoryCounts = {
+      1: 0, // Elegance
+      2: 0, // Pump Covers
+      3: 0, // Confidence
+      4: 0  // Available
+    };
+
+    votes.forEach(vote => {
+      const categoryId = productCategoryMap[vote.productId];
+      if (categoryId && categoryCounts[categoryId] !== undefined) {
+        categoryCounts[categoryId]++;
+      }
+    });
+
+    const total = Object.values(categoryCounts).reduce((sum, count) => sum + count, 0);
 
     res.json({
-      elegance: stats[0],
-      pumpCovers: stats[1],
-      confidence: stats[2],
-      total: stats.reduce((sum, count) => sum + count, 0)
+      elegance: categoryCounts[1],
+      pumpCovers: categoryCounts[2],
+      confidence: categoryCounts[3],
+      available: categoryCounts[4],
+      total: total
     });
   } catch (error) {
     console.error("Error fetching clothing vote stats:", error);

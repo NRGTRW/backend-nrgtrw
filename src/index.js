@@ -40,7 +40,10 @@ const io = new SocketIOServer(server, {
     origin: [
       "http://localhost:5173",
       "http://localhost:5174",
-      "http://localhost:3000"
+      "http://localhost:3000",
+      "https://api.nrgtrw.com",
+      "https://www.nrgtrw.com",
+      "https://nrgtrw.com"
     ],
     methods: ["GET", "POST", "PATCH"],
     credentials: true

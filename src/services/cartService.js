@@ -13,7 +13,6 @@ export const getCartByUser = async (userId) => {
         product: {
           select: {
             price: true, // Price is directly on the Product model
-            stock: true,
             colors: true,
             sizes: {
               include: {

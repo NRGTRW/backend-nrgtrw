@@ -147,14 +147,15 @@ router.get("/check", async (req, res) => {
       where: { userId: user.id }
     });
     // Get position and total for the global waitlist
+    // Note: Since programId is required in FitnessWaitlist, we can't filter by null
+    // For now, we'll get all waitlist entries
     const allEntries = await prisma.fitnessWaitlist.findMany({
-      where: { programId: null },
       orderBy: { createdAt: "asc" }
     });
     const total = allEntries.length;
     let position = null;
     if (waitlistEntry) {
-      position = allEntries.findIndex((entry) => entry.email === email) + 1;
+      position = allEntries.findIndex((entry) => entry.userId === user.id) + 1;
     }
     res.json({
       isOnWaitlist: !!waitlistEntry,

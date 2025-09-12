@@ -10,7 +10,6 @@ export async function getWishlistByUser(userId) {
           select: {
             id: true,
             price: true,
-            stock: true,
             colors: true,
             sizes: {
               include: {

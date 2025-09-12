@@ -128,8 +128,23 @@ router.get("/check", async (req, res) => {
     if (!email) {
       return res.status(400).json({ error: "Email is required" });
     }
-    const waitlistEntry = await prisma.fitnessWaitlist.findFirst({
+    
+    // First find the user by email
+    const user = await prisma.user.findUnique({
       where: { email }
+    });
+    
+    if (!user) {
+      return res.json({ 
+        isOnWaitlist: false, 
+        position: null, 
+        total: 0,
+        message: "User not found" 
+      });
+    }
+    
+    const waitlistEntry = await prisma.fitnessWaitlist.findFirst({
+      where: { userId: user.id }
     });
     // Get position and total for the global waitlist
     const allEntries = await prisma.fitnessWaitlist.findMany({

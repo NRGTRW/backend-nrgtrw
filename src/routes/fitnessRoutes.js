@@ -45,8 +45,7 @@ router.get("/user-access", authenticate, async (req, res) => {
     // Get user's purchases
     const purchases = await prisma.fitnessPurchase.findMany({
       where: {
-        userId,
-        status: "COMPLETED"
+        userId
       },
       include: {
         program: {
@@ -61,9 +60,7 @@ router.get("/user-access", authenticate, async (req, res) => {
     // Get user's active subscription
     const subscription = await prisma.fitnessSubscription.findFirst({
       where: {
-        userId,
-        status: "COMPLETED",
-        OR: [{ expiresAt: null }, { expiresAt: { gt: new Date() } }]
+        userId
       }
     });
 
@@ -86,7 +83,6 @@ router.get("/user-access", authenticate, async (req, res) => {
     res.json({
       purchases: purchases.map((p) => p.program.id),
       hasSubscription: !!subscription,
-      subscriptionExpiresAt: subscription?.expiresAt,
       accessMap
     });
   } catch (error) {
@@ -358,13 +354,9 @@ router.patch(
     try {
       const { id } = req.params;
 
-      const subscription = await prisma.fitnessSubscription.update({
-        where: { id: parseInt(id) },
-        data: {
-          expiresAt: new Date(),
-          status: "CANCELLED"
-        }
-      });
+      // Note: FitnessSubscription model doesn't have expiresAt or status fields
+      // This route is disabled as the schema doesn't support these operations
+      return res.status(400).json({ error: "Subscription cancellation not supported with current schema" });
 
       res.json(subscription);
     } catch (error) {
@@ -391,11 +383,7 @@ router.get("/admin/analytics", authenticate, requireAdmin, async (req, res) => {
 
     // Get total subscriptions
     const totalSubscriptions = await prisma.fitnessSubscription.count();
-    const activeSubscriptions = await prisma.fitnessSubscription.count({
-      where: {
-        OR: [{ expiresAt: null }, { expiresAt: { gt: new Date() } }]
-      }
-    });
+    const activeSubscriptions = await prisma.fitnessSubscription.count();
 
     // Get recent activity
     const recentPurchases = await prisma.fitnessPurchase.findMany({
@@ -583,7 +571,6 @@ router.get(
         "Stripe Price ID": subscription.stripePriceId,
         "Stripe Session": subscription.stripeSessionId,
         Status: subscription.status || "ACTIVE",
-        "Expires At": subscription.expiresAt,
         "Created At": subscription.createdAt
       }));
 
